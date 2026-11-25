@@ -1,0 +1,108 @@
+-- SITES
+CREATE TABLE IF NOT EXISTS sites (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  nom TEXT UNIQUE NOT NULL,
+  ville TEXT,
+  adresse TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- USERS
+CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  username TEXT UNIQUE NOT NULL,
+  email TEXT UNIQUE,
+  password TEXT NOT NULL,
+  role TEXT NOT NULL CHECK(role IN ('central', 'gerant', 'vendeur')),
+  site_id INTEGER,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(site_id) REFERENCES sites(id)
+);
+
+-- PRODUITS
+CREATE TABLE IF NOT EXISTS produits (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  sku TEXT UNIQUE NOT NULL,
+  nom TEXT NOT NULL,
+  prix REAL NOT NULL,
+  categorie TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- STOCKS
+CREATE TABLE IF NOT EXISTS stocks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  produit_id INTEGER NOT NULL,
+  site_id INTEGER NOT NULL,
+  quantite INTEGER DEFAULT 0,
+  UNIQUE(produit_id, site_id),
+  FOREIGN KEY(produit_id) REFERENCES produits(id),
+  FOREIGN KEY(site_id) REFERENCES sites(id)
+);
+
+-- VENTES
+CREATE TABLE IF NOT EXISTS ventes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  site_id INTEGER NOT NULL,
+  vendeur_id INTEGER NOT NULL,
+  total REAL NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(site_id) REFERENCES sites(id),
+  FOREIGN KEY(vendeur_id) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS vente_items (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  vente_id INTEGER NOT NULL,
+  produit_id INTEGER NOT NULL,
+  quantite INTEGER NOT NULL,
+  prix REAL NOT NULL,
+  FOREIGN KEY(vente_id) REFERENCES ventes(id),
+  FOREIGN KEY(produit_id) REFERENCES produits(id)
+);
+
+-- COMMANDES
+CREATE TABLE IF NOT EXISTS commandes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  site_id INTEGER NOT NULL,
+  vendeur_id INTEGER NOT NULL,
+  client_nom TEXT,
+  total REAL NOT NULL DEFAULT 0,
+  statut TEXT DEFAULT 'en_attente' CHECK(statut IN ('en_attente', 'validee', 'livree', 'annulee')),
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(site_id) REFERENCES sites(id),
+  FOREIGN KEY(vendeur_id) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS commande_items (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  commande_id INTEGER NOT NULL,
+  produit_id INTEGER NOT NULL,
+  quantite INTEGER NOT NULL,
+  prix REAL NOT NULL,
+  FOREIGN KEY(commande_id) REFERENCES commandes(id),
+  FOREIGN KEY(produit_id) REFERENCES produits(id)
+);
+
+-- APPROVISIONNEMENTS
+CREATE TABLE IF NOT EXISTS appros (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  site_id INTEGER NOT NULL,
+  produit_id INTEGER NOT NULL,
+  quantite INTEGER NOT NULL,
+  prix_achat REAL DEFAULT 0,
+  fournisseur TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(site_id) REFERENCES sites(id),
+  FOREIGN KEY(produit_id) REFERENCES produits(id)
+);
+
+-- DEPENSES
+CREATE TABLE IF NOT EXISTS depenses (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  site_id INTEGER NOT NULL,
+  motif TEXT NOT NULL,
+  montant REAL NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(site_id) REFERENCES sites(id)
+);
