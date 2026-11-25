@@ -1,0 +1,7 @@
+
+const express=require('express');const r=express.Router();const sqlite3=require('sqlite3').verbose();const db=new sqlite3.Database('db/benzene.db');
+db.exec("PRAGMA journal_mode=WAL;");
+r.get('/site/:id/search',(req,res)=>{const q='%'+(req.query.q||'')+'%';db.all("SELECT p.id,p.sku,p.nom,p.prix,COALESCE(s.quantite,0) as quantite FROM produits p LEFT JOIN stocks s ON s.produit_id=p.id AND s.site_id=? WHERE p.nom LIKE ? OR p.sku LIKE ? LIMIT 50",[req.params.id,q,q],(e,rows)=>res.json(rows||[]));});
+r.post('/import',(req,res)=>{const produits=req.body.produits;db.serialize(()=>{const stmtP=db.prepare('INSERT OR IGNORE INTO produits (sku,nom,prix) VALUES (?,?,?)');const stmtS=db.prepare('INSERT OR IGNORE INTO stocks (produit_id,site_id,quantite) VALUES (?,1,100)');produits.forEach(p=>{stmtP.run(p.sku,p.nom,p.prix,function(){let pid=this.lastID;if(pid===0){db.get('SELECT id FROM produits WHERE sku=?',[p.sku],(e,r)=>{if(r)stmtS.run(r.id);});}else stmtS.run(pid);});});stmtP.finalize(()=>{stmtS.finalize(()=>res.json({ok:true,imported:produits.length}));});});});
+r.post('/transfer',(req,res)=>{const{produit_id,from_site,to_site,quantite}=req.body;db.serialize(()=>{db.run("BEGIN IMMEDIATE");db.run('UPDATE stocks SET quantite=quantite-? WHERE produit_id=? AND site_id=?',[quantite,produit_id,from_site]);db.run('INSERT INTO stocks (produit_id,site_id,quantite) VALUES (?,?,?) ON CONFLICT(produit_id,site_id) DO UPDATE SET quantite=quantite+excluded.quantite',[produit_id,to_site,quantite],()=>{db.run("COMMIT");res.json({ok:true});});});});
+module.exports=r;

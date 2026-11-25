@@ -1,0 +1,1 @@
+const express=require('express');const r=express.Router();const {vendre}=require('../services/venteService');r.post('/',(req,res)=>{vendre(req.body,(err,result)=>{if(err)return res.status(400).json({error:err.message});res.json(result);});});module.exports=r;
