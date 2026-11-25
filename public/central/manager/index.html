@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DUBENZENE - Gérant</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;display:flex;height:100vh;overflow:hidden;font-family:Inter,system-ui,sans-serif;background:#0a0e1a}
+.sidebar{width:280px;background:#0a0e1a;flex-shrink:0;display:flex;flex-direction:column;border-right:1px solid #1e2435}
+.header{padding:24px;border-bottom:1px solid #1e2435;display:flex;gap:12px;align-items:center}
+.logo{width:36px;height:36px;background:#facc15;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;color:#000}
+.live{margin-left:auto;background:#1a2300;color:#a3e635;font-size:9px;padding:3px 7px;border-radius:20px;border:1px solid #2a3a00;font-weight:700}
+.menu{flex:1;padding:14px;overflow:auto}
+.menu-title{color:#3a415c;font-size:10px;font-weight:700;letter-spacing:1px;margin:8px 12px 12px}
+.menu-item{padding:11px 14px;border-radius:12px;cursor:pointer;margin-bottom:6px;font-size:13px;display:flex;gap:10px;align-items:center;transition:0.2s;user-select:none}
+.menu-item.active{background:#facc15;color:#000;font-weight:700}
+.menu-item.inactive{color:#8a8fa3;font-weight:500}
+.menu-item.inactive:hover{background:#12172a;color:#fff}
+.badge-ia{background:#F97316;color:#fff;font-size:9px;font-weight:800;padding:3px 7px;border-radius:20px;margin-left:auto}
+.bottom{padding:14px;border-top:1px solid #1e2435;display:flex;flex-direction:column;gap:10px}
+.user-card{background:#12172a;border:1px solid #1e2435;border-radius:12px;padding:12px;display:flex;gap:10px;align-items:center}
+.avatar{width:32px;height:32px;background:#facc15;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px}
+.btn-logout{width:100%;padding:11px 14px;background:#1a1010;border:1px solid #ff3b30;border-radius:12px;color:#ff6b6b;font-size:13px;font-weight:700;display:flex;gap:10px;align-items:center;justify-content:center;cursor:pointer}
+.btn-logout:hover{background:#ff3b30;color:#fff}
+.main{flex:1;background:#f5f5f7;overflow:hidden;display:flex;flex-direction:column}
+iframe{width:100%;height:100%;border:0;background:#f5f5f7}
+</style>
+</head>
+<body>
+<div class="sidebar">
+  <div class="header">
+    <div class="logo">D</div>
+    <div><div style="color:#fff;font-weight:800;font-size:13px" id="site">DUBENZENE</div><div style="color:#5a6080;font-size:10px;font-weight:600" id="siteSub">GÉRANT • VICTOIRE</div></div>
+    <div class="live">LIVE</div>
+  </div>
+  <div class="menu">
+    <div class="menu-title">MENU GÉRANT</div>
+    <div id="m1" onclick="go('modules/dashboard.html','m1')" class="menu-item active">📊 Dashboard</div>
+    <div id="m2" onclick="go('modules/vente.html','m2')" class="menu-item inactive">🛒 Vente</div>
+    <div id="m3" onclick="go('modules/stock.html','m3')" class="menu-item inactive">📦 Stock Site</div>
+    <div id="m4" onclick="go('modules/commandes.html','m4')" class="menu-item inactive">📨 Commandes Dépôt</div>
+    <div id="m5" onclick="go('modules/caisse.html','m5')" class="menu-item inactive">💰 Caisse</div>
+    <div id="m6" onclick="go('modules/historique.html','m6')" class="menu-item inactive">📜 Ventes / Historique</div>
+    <div id="m7" onclick="go('modules/vendeurs.html','m7')" class="menu-item inactive">👥 Vendeurs</div>
+    <div id="m8" onclick="go('modules/retours.html','m8')" class="menu-item inactive">🔄 Retours</div>
+  </div>
+  <div class="bottom">
+    <div class="user-card">
+      <div class="avatar" id="avatarLetter">G</div>
+      <div><div style="color:#fff;font-size:12px;font-weight:700" id="userName">Gérant</div><div style="color:#5a6080;font-size:10px" id="userRole">Gérant • Victoire</div></div>
+    </div>
+    <button id="btnLogout" type="button" class="btn-logout">🚪 Déconnexion</button>
+  </div>
+</div>
+<div class="main"><iframe id="frame" src="modules/dashboard.html"></iframe></div>
+<script>
+let u=null;try{u=JSON.parse(localStorage.getItem('user'))}catch{}
+if(!u){location.href='/central/login.html';}
+else{
+  let nomSite=(u.siteName||'VICTOIRE').toUpperCase();
+  document.getElementById('site').textContent='DUBENZENE '+nomSite;
+  document.getElementById('siteSub').textContent='GÉRANT • '+nomSite;
+  let n=u.nom||u.username||u.name||'Gérant';
+  document.getElementById('userName').textContent=n;
+  document.getElementById('userRole').textContent='Gérant • '+nomSite;
+  document.getElementById('avatarLetter').textContent=n.charAt(0).toUpperCase();
+}
+function go(page,id){
+  if(page && !page.startsWith('modules/') && !page.startsWith('http')){
+    page = 'modules/' + page;
+  }
+  document.getElementById('frame').src=page;
+  document.querySelectorAll('.menu-item').forEach(m=>{m.classList.remove('active');m.classList.add('inactive');});
+  const a=document.getElementById(id); if(a){a.classList.add('active');a.classList.remove('inactive');}
+  localStorage.setItem('lastPageGerant',page); localStorage.setItem('lastIdGerant',id);
+}
+function doLogout(){
+  try{localStorage.removeItem('user');localStorage.removeItem('isLogged');localStorage.removeItem('lastPageGerant');localStorage.removeItem('lastIdGerant');}catch(e){}
+  window.location.href='/central/login.html';
+}
+document.getElementById('btnLogout').addEventListener('click',doLogout);
+try{
+  let lp=localStorage.getItem('lastPageGerant'); let li=localStorage.getItem('lastIdGerant');
+  if(lp && li){ go(lp,li); }
+}catch(e){}
+</script>
+</body>
+</html>

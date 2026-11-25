@@ -1,0 +1,83 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Commandes Depot</title></head>
+<body style="background:#05070a;color:#fff;font-family:Arial;padding:14px">
+<style>.card{background:#111827;border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:14px}.input,.sel{width:100%;background:#000;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:12px;color:#fff;outline:none;margin-bottom:10px}.btn{background:#22c55e;color:#000;border:none;padding:13px;border-radius:12px;font-weight:800;cursor:pointer;width:100%}.row{padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06)}.badge{padding:5px 10px;border-radius:100px;font-size:10px;font-weight:800}.sug{position:relative}.sugList{position:absolute;top:100%;left:0;right:0;background:#111827;border:1px solid rgba(255,255,255,.2);border-radius:12px;max-height:220px;overflow:auto;z-index:10;display:none}.sugItem{padding:11px 12px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.06)}.sugItem:hover,.sugItem.sel{background:#facc15;color:#000}.sugItem b{color:#facc15}.sugItem.sel b{color:#000}</style>
+<h2>🚚 Commandes Dépôt</h2>
+<div style="font-size:18px;font-weight:900">📍 SITE : <span id="siteName" style="color:#facc15"></span></div>
+<div style="font-size:15px;font-weight:900;margin-top:4px">👤 GÉRANT : <span id="gerantName"></span></div>
+<div class="card" style="margin-top:14px"><h3>📦 Nouvelle demande de stock</h3>
+<div class="sug"><input id="prodSearch" class="input" placeholder="🔍 Chercher produit... ex: desin, savon, eau" autocomplete="off" oninput="filtrerProd()" onfocus="filtrerProd()" onkeydown="navProd(event)"><div id="sugList" class="sugList"></div></div>
+<input type="hidden" id="prod"><div id="prodInfo" style="font-size:12px;color:#94a3b8;margin:-6px 0 10px"></div>
+<input id="qte" type="number" class="input" placeholder="Quantite demandee" value="10">
+<input id="note" class="input" placeholder="Note (optionnel)">
+<button class="btn" onclick="envoyer()">ENVOYER LA DEMANDE</button></div>
+<div class="card" style="margin-top:14px;border:2px solid #a78bfa"><h3>💬 Autre demande - Message au Dépôt</h3>
+<p style="color:#94a3b8;font-size:12px">Pas du stock ? Ex : frigo en panne, il faut des sacs, il faut du transport...</p>
+<textarea id="msgLibre" class="input" placeholder="Écris ton message ici..." style="min-height:90px;resize:vertical"></textarea>
+<button class="btn" style="background:#a78bfa;color:#000" onclick="envoyerMessage()">💬 ENVOYER LE MESSAGE</button></div>
+<div class="card" style="margin-top:14px"><h3>Mes demandes</h3><div id="list"></div></div>
+<button onclick="location.href='stock-site.html'" style="margin-top:14px;width:100%;padding:12px;border-radius:12px;background:#fff;font-weight:800;cursor:pointer;border:none">RETOUR STOCK</button>
+<script>
+function getNomSite(code){if(!code)return 'SITE INCONNU';try{var sites=JSON.parse(localStorage.getItem('dub_sites')||'[]');for(var i=0;i<sites.length;i++){var s=sites[i];var c=typeof s==='string'?s:(s.code||s.id||s.nom);var n=typeof s==='string'?s:(s.nom||s.name||s.siteNom);if(String(c).toLowerCase()===String(code).toLowerCase()&&n)return String(n).toUpperCase();}}catch(e){}try{var users=JSON.parse(localStorage.getItem('dub_users')||'[]');for(var j=0;j<users.length;j++){if(String(users[j].site||users[j].siteId||'').toLowerCase()===String(code).toLowerCase()&&users[j].siteNom)return String(users[j].siteNom).toUpperCase();}}catch(e){}return String(code).replace(/[-_]/g,' ').toUpperCase();}
+function getMe(){try{var u=JSON.parse(localStorage.getItem('user')||'{}');var uid=localStorage.getItem('dub_current_user_id')||u.id||'';var us=JSON.parse(localStorage.getItem('dub_users')||'[]');var me=u;for(var i=0;i<us.length;i++){if(String(us[i].id)===String(uid)){me=us[i];break;}}var siteCode=String(me.siteId||me.site||u.siteId||u.site||'victoire').toLowerCase();return{site:siteCode,siteNom:getNomSite(siteCode),nom:me.nom||me.name||u.nom||u.name||'GERANT'};}catch(e){return{site:'victoire',siteNom:'VICTOIRE',nom:'GERANT'}}}
+var ME=getMe();document.getElementById('siteName').innerText=ME.siteNom;document.getElementById('gerantName').innerText=ME.nom;
+function getCmd(){try{return JSON.parse(localStorage.getItem('dub_commandes_depot')||'[]')}catch(e){return[]}}
+function normaliser(t){return String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,' ').trim();}
+function surligner(nom,q){if(!q)return nom;var idx=normaliser(nom).indexOf(normaliser(q));if(idx<0)return nom;return nom.slice(0,idx)+'<b>'+nom.slice(idx,idx+q.length)+'</b>'+nom.slice(idx+q.length);}
+var ALL_PRODUITS=[];var FILTRES=[];var SEL_INDEX=-1;
+function remplirProd(){
+  var map={};
+  try{var sp=JSON.parse(localStorage.getItem('dub_sites_produits')||'{}');for(var k in sp){sp[k].forEach(function(p){if(p.nom)map[p.nom]={nom:p.nom,stock:+p.stock||+p.stock_site||+p.quantite||+p.qte||0};});}}catch(e){}
+  try{var central=JSON.parse(localStorage.getItem('dub_produits')||'[]');central.forEach(function(p){var n=p.nom||p.name;if(n&&!map[n])map[n]={nom:n,stock:+p.stock||+p.stock_site||+p.quantite||+p.qte||0};});}catch(e){}
+  try{['dub_stock_depot','dub_depot_produits','dub_stock_central'].forEach(function(key){var a=JSON.parse(localStorage.getItem(key)||'[]');if(Array.isArray(a))a.forEach(function(p){var n=p.nom||p.name;if(n&&!map[n])map[n]={nom:n,stock:+p.stock||+p.stock_site||+p.quantite||+p.qte||0};});});}catch(e){}
+  ALL_PRODUITS=Object.keys(map).map(function(k){return map[k];}).sort(function(a,b){return a.nom.localeCompare(b.nom);});
+  var pre=localStorage.getItem('dub_cmd_prefill')||'';if(pre){choisirProd(pre);}
+}
+function filtrerProd(){
+  var q=document.getElementById('prodSearch').value.trim();
+  var box=document.getElementById('sugList');
+  // Recherche intelligente : début, contient, chaque mot, sans accents
+  var qn=normaliser(q);var mots=qn.split(' ').filter(Boolean);
+  FILTRES=ALL_PRODUITS.filter(function(p){
+    if(!qn) return true;
+    var pn=normaliser(p.nom);
+    if(pn.indexOf(qn)===0) return true;
+    if(pn.includes(qn)) return true;
+    return mots.every(function(w){return pn.includes(w);});
+  }).sort(function(a,b){
+    var an=normaliser(a.nom),bn=normaliser(b.nom);
+    var as=an.indexOf(qn)===0?0:an.includes(qn)?1:2;
+    var bs=bn.indexOf(qn)===0?0:bn.includes(qn)?1:2;
+    return as-bs||a.nom.localeCompare(b.nom);
+  }).slice(0,30);
+  SEL_INDEX=-1;
+  if(!FILTRES.length){box.innerHTML='<div class="sugItem">Aucun produit pour "'+q+'"</div>';box.style.display='block';return;}
+  box.innerHTML=FILTRES.map(function(p,i){return '<div class="sugItem" data-i="'+i+'" onclick="choisirProd(\''+p.nom.replace(/'/g,"\\'")+'\')">'+surligner(p.nom,q)+' <span style="color:#94a3b8">• Stock site : '+p.stock+'</span></div>';}).join('');
+  box.style.display='block';
+}
+function navProd(e){
+  var box=document.getElementById('sugList');
+  if(e.key==='ArrowDown'){e.preventDefault();SEL_INDEX=Math.min(SEL_INDEX+1,FILTRES.length-1);}
+  else if(e.key==='ArrowUp'){e.preventDefault();SEL_INDEX=Math.max(SEL_INDEX-1,0);}
+  else if(e.key==='Enter'){e.preventDefault();if(SEL_INDEX>=0&&FILTRES[SEL_INDEX])choisirProd(FILTRES[SEL_INDEX].nom);return;}
+  else if(e.key==='Escape'){box.style.display='none';return;}
+  else return;
+  var items=box.querySelectorAll('.sugItem');items.forEach(function(el,i){el.classList.toggle('sel',i===SEL_INDEX);if(i===SEL_INDEX)el.scrollIntoView({block:'nearest'});});
+}
+function choisirProd(nom){
+  document.getElementById('prod').value=nom;document.getElementById('prodSearch').value=nom;
+  var p=ALL_PRODUITS.find(function(x){return x.nom===nom;});
+  document.getElementById('prodInfo').innerHTML=p?'✅ Produit : <b style="color:#fff">'+nom+'</b> • Stock site : <b style="color:#facc15">'+p.stock+'</b>':'✅ Produit : <b style="color:#fff">'+nom+'</b>';
+  document.getElementById('sugList').style.display='none';document.getElementById('qte').focus();
+}
+document.addEventListener('click',function(e){if(!e.target.closest('.sug'))document.getElementById('sugList').style.display='none';});
+function envoyer(){
+  var p=document.getElementById('prod').value||document.getElementById('prodSearch').value.trim(),q=parseInt(document.getElementById('qte').value||'0');
+  if(!p||q<=0)return alert('Cherche un produit + quantite');
+  if(!ALL_PRODUITS.find(function(x){return x.nom.toLowerCase()===p.toLowerCase();})) if(!confirm('Produit "'+p+'" pas dans la liste. Envoyer quand même ?')) return;
+  var list=getCmd();list.unshift({id:Date.now(),type:'STOCK',siteId:ME.site,siteNom:ME.siteNom,produit:p,qte:q,qteDemandee:q,note:document.getElementById('note').value,statut:'En attente',date:new Date().toISOString(),gerant:ME.nom,demandeur:ME.nom});localStorage.setItem('dub_commandes_depot',JSON.stringify(list));alert('Demande envoyée au dépôt !');document.getElementById('note').value='';document.getElementById('prodSearch').value='';document.getElementById('prod').value='';document.getElementById('prodInfo').innerHTML='';render();
+}
+function envoyerMessage(){var texte=document.getElementById('msgLibre').value.trim();if(!texte)return alert('Écris ton message d’abord');var list=getCmd();list.unshift({id:Date.now(),type:'MESSAGE',siteId:ME.site,siteNom:ME.siteNom,produit:'💬 MESSAGE',qte:0,message:texte,note:texte,statut:'En attente',date:new Date().toISOString(),gerant:ME.nom,demandeur:ME.nom});localStorage.setItem('dub_commandes_depot',JSON.stringify(list));document.getElementById('msgLibre').value='';alert('Message envoyé au dépôt !');render();}
+function confirmerReception(id){var list=getCmd();var cmd=null;list.forEach(function(c){if(String(c.id)===String(id))cmd=c;});if(!cmd)return;if(!confirm('Tu confirmes avoir reçu '+cmd.qteEnvoyee+' x '+cmd.produit+' dans tes mains ?\nÇa va entrer dans ton stock.'))return;var sp={};try{sp=JSON.parse(localStorage.getItem('dub_sites_produits')||'{}')}catch(e){}if(!sp[ME.site])sp[ME.site]=[];var stockAvant=0,stockApres=0,trouve=false;for(var j=0;j<sp[ME.site].length;j++){if((sp[ME.site][j].nom||'').toLowerCase().trim()===(cmd.produit||'').toLowerCase().trim()){stockAvant=+sp[ME.site][j].stock||+sp[ME.site][j].stock_site||+sp[ME.site][j].quantite||+sp[ME.site][j].qte||0;stockApres=stockAvant+Number(cmd.qteEnvoyee||0);sp[ME.site][j].stock=stockApres;sp[ME.site][j].stock_site=stockApres;sp[ME.site][j].quantite=stockApres;sp[ME.site][j].qte=stockApres;trouve=true;break;}}if(!trouve){stockApres=Number(cmd.qteEnvoyee||0);sp[ME.site].push({nom:cmd.produit,stock:stockApres,stock_site:stockApres,quantite:stockApres,qte:stockApres,pv:0});}localStorage.setItem('dub_sites_produits',JSON.stringify(sp));var h=[];try{h=JSON.parse(localStorage.getItem('dub_ajouts_historique')||'[]')}catch(e){}h.unshift({id:'AJ'+Date.now(),siteId:ME.site,siteNom:ME.siteNom,produit:cmd.produit,qte:Number(cmd.qteEnvoyee||0),pv:0,stockAvant:stockAvant,stockApres:stockApres,note:'Réception dépôt - Demandé par '+ME.nom+' | Demandé '+cmd.qteDemandee+' - Envoyé '+cmd.qteEnvoyee,gerant:ME.nom,date:new Date().toISOString(),statut:'AJOUTÉ'});localStorage.setItem('dub_ajouts_historique',JSON.stringify(h));cmd.statut='Livrée';cmd.dateReception=new Date().toISOString();localStorage.setItem('dub_commandes_depot',JSON.stringify(list));alert('✅ Reçu ! Stock : '+stockAvant+' → '+stockApres);render();}
+function render(){var list=getCmd().filter(function(c){return String(c.siteId||'').toLowerCase()===ME.site;});list.sort(function(a,b){return new Date(b.date)-new Date(a.date);});var h='';if(!list.length)h='<div style="color:#64748b">Aucune demande</div>';list.forEach(function(c){var col=c.statut==='En attente'?'rgba(250,204,21,.2);color:#facc15':c.statut==='Expédiée'?'rgba(59,130,246,.2);color:#60a5fa':c.statut==='Livrée'?'rgba(34,197,94,.2);color:#22c55e':c.statut==='Lu'?'rgba(167,139,250,.2);color:#a78bfa':'rgba(239,68,68,.2);color:#f87171';if(c.type==='MESSAGE'){h+='<div class="row"><div style="display:flex;justify-content:space-between;gap:8px"><b>💬 MESSAGE</b><span class="badge" style="background:'+col+'">'+c.statut+'</span></div><div style="background:rgba(255,255,255,.06);border-radius:12px;padding:10px;margin-top:8px">"'+(c.message||c.note||'')+'"</div><small style="color:#94a3b8">'+new Date(c.date).toLocaleString('fr-FR')+'</small></div>';}else if(c.statut==='Expédiée'){h+='<div class="row" style="border:2px solid #3b82f6;border-radius:14px;padding:12px;margin-bottom:10px"><div style="display:flex;justify-content:space-between;gap:8px"><b>📦 '+c.produit+'</b><span class="badge" style="background:'+col+'">Expédiée</span></div><div style="margin:8px 0">Le dépôt a envoyé : <b style="color:#3b82f6;font-size:18px">'+c.qteEnvoyee+' pcs</b><br><small style="color:#94a3b8">Tu avais demandé '+c.qteDemandee+' pcs • Envoyé le '+new Date(c.dateEnvoi||c.date).toLocaleString('fr-FR')+'</small></div><button onclick="confirmerReception(\''+c.id+'\')" style="width:100%;background:#22c55e;color:#000;border:none;padding:12px;border-radius:12px;font-weight:900;cursor:pointer">✅ J\'AI REÇU - FAIRE ENTRER DANS MON STOCK</button></div>';}else{h+='<div class="row"><div style="display:flex;justify-content:space-between;gap:8px"><b>'+c.produit+'</b><span class="badge" style="background:'+col+'">'+c.statut+'</span></div><small style="color:#94a3b8">'+new Date(c.date).toLocaleString('fr-FR')+' - Demandé '+c.qte+' pcs'+(c.qteEnvoyee?' • Envoyé '+c.qteEnvoyee+' pcs':'')+(c.note?' • '+c.note:'')+'</small></div>';}});document.getElementById('list').innerHTML=h;}
+remplirProd();render();
+</script></body></html>

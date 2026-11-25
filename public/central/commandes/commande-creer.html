@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Créer Commande - DUBENZEN</title>
+<style>
+body{background:#0b0e14;color:#fff;font-family:Arial,sans-serif;padding:14px;margin:0}
+.card{background:#151a26;border:1px solid #222735;border-radius:12px;padding:14px;margin-bottom:14px}
+select,input{padding:10px;border-radius:8px;border:1px solid #333;background:#1f2937;color:#fff;width:100%;box-sizing:border-box}
+button{padding:10px 16px;border-radius:8px;border:0;cursor:pointer;font-weight:800}
+.btn-yellow{background:#facc15;color:#000}
+.btn-green{background:#22c55e;color:#fff}
+.btn-dark{background:#1f2937;color:#fff;border:1px solid #333}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:8px;border-bottom:1px solid #222735;text-align:left}
+th{color:#facc15}
+input.qte{width:70px;text-align:center}
+input.prix{width:90px;text-align:center}
+input.chk{width:22px;height:22px;cursor:pointer;accent-color:#22c55e}
+tr.off{opacity:.35}
+#printZone{display:none}
+@media print{
+  @page{ size:80mm auto; margin:0; }
+  body{background:#fff;color:#000;margin:0;padding:0;font-family:'Courier New',monospace}
+  .no-print, .card, #resultat{ display:none !important; }
+  #printZone{ display:block !important; width:80mm; padding:3mm 2mm; font-size:11px; color:#000; }
+  #printZone h2{ font-size:14px; text-align:center; margin:0 0 2mm; }
+  #printZone .entete{ text-align:center; font-size:11px; border-bottom:1px dashed #000; padding-bottom:2mm; margin-bottom:2mm; }
+  #printZone .fournisseur{ font-size:12px; font-weight:900; margin:3mm 0 1mm; border-top:1px dashed #000; padding-top:2mm; }
+  #printZone table{ width:100%; border-collapse:collapse; font-size:11px; }
+  #printZone th{ text-align:left; border-bottom:1px dashed #000; padding:1mm 0; font-size:10px; }
+  #printZone td{ padding:1mm 0; border-bottom:1px dotted #ccc; vertical-align:top; }
+  #printZone td.q{ text-align:center; font-weight:900; }
+  #printZone td.t{ text-align:right; font-weight:900; }
+  #printZone .total-f{ text-align:right; font-weight:900; font-size:12px; border-top:1px dashed #000; padding:1mm 0; margin-bottom:2mm; }
+  #printZone .total-g{ text-align:center; font-weight:900; font-size:14px; border:1px solid #000; padding:2mm; margin-top:3mm; }
+  #printZone .pied{ text-align:center; font-size:10px; margin-top:3mm; }
+}
+</style>
+</head>
+<body>
+<div class="no-print">
+  <h2>🧾 Créer Commande Automatique</h2>
+  <div class="card" style="display:grid;gap:10px">
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <div style="flex:1;min-width:180px"><label>Pour :</label>
+        <select id="type" onchange="onTypeChange()">
+          <option value="DEPOT">🏭 Dépôt Central</option>
+          <option value="UN_SITE">📍 Un Site</option>
+          <option value="TOUS_SITES">🏪 Tous les Sites</option>
+          <option value="DEPOT_TOUS">🌍 Dépôt + Tous les Sites</option>
+        </select>
+      </div>
+      <div style="flex:1;min-width:180px" id="blocSite" hidden><label>Site :</label><select id="site"></select></div>
+      <div style="flex:1;min-width:180px"><label>Rechercher fournisseur ou produit :</label><input id="rechercheFournisseur" placeholder="Ex : SHALINA ou PARACETAMOL" oninput="afficher()"></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn-yellow" onclick="generer()">🔄 Générer</button>
+      <button class="btn-green" onclick="enregistrer()">💾 Enregistrer</button>
+      <button class="btn-dark" onclick="preparerImpression()">🖨️ Imprimer Thermique</button>
+      <button class="btn-dark" onclick="toutCocher(true)">✅ Tout cocher</button>
+      <button class="btn-dark" onclick="toutCocher(false)">❌ Tout décocher</button>
+      <a href="commandes-historique.html"><button class="btn-dark" type="button">📋 Historique</button></a>
+      <a href="../appros/fournisseurs.html"><button class="btn-dark" type="button">⚙️ Priorités Fournisseurs</button></a>
+    </div>
+    <div id="resume" style="font-weight:900;color:#facc15"></div>
+  </div>
+</div>
+<div id="resultat" class="no-print"></div>
+<div id="printZone"></div>
+<script src="db.js"></script>
+<script src="commande.js"></script>
+<script>
+let groupesActuels = [];
+let titreActuel = '';
+let siteIdActuel = 'DEPOT';
+let typeActuel = 'DEPOT';
+
+// CORRECTION : on initialise IndexedDB + migration + cache au démarrage
+dbInit().then(async ()=>{
+  await dbMigrerAncien();
+  if(typeof chargerCommandesCache === 'function') await chargerCommandesCache();
+});
+
+function getSiteIdActuel(){ let type = document.getElementById('type').value; if(type === 'UN_SITE') return document.getElementById('site').value || 'DEPOT'; if(type === 'DEPOT') return 'DEPOT'; return type; }
+function remplirSites(){ let sel = document.getElementById('site'); let sites = getSitesListCommande(); sel.innerHTML = sites.map(s=>`<option value="${s.id}">${s.nom}</option>`).join('') || '<option value="">Aucun site</option>'; }
+function onTypeChange(){ let t = document.getElementById('type').value; document.getElementById('blocSite').hidden = (t !== 'UN_SITE'); }
+function generer(){ let type = document.getElementById('type').value; typeActuel = type; let site = document.getElementById('site').value; siteIdActuel = getSiteIdActuel(); groupesActuels = genererGroupesCommande(type, site); groupesActuels.forEach(g=> g.produits.forEach(p=> p.selected = true)); titreActuel = type==='DEPOT' ? 'Dépôt Central' : type==='UN_SITE' ? (document.getElementById('site').options[document.getElementById('site').selectedIndex]?.text || site) : type==='TOUS_SITES' ? 'Tous les Sites' : 'Dépôt + Tous les Sites'; afficher(); }
+function toggleProduit(gi, pi, checked){ let p = groupesActuels[gi].produits[pi]; p.selected = !!checked; let tr = document.querySelector(`tr[data-gi="${gi}"][data-pi="${pi}"]`); if(tr) tr.classList.toggle('off', !checked); recalculer(); }
+function toggleFournisseur(gi, checked){ groupesActuels[gi].produits.forEach((p,pi)=>{ p.selected = !!checked; let tr = document.querySelector(`tr[data-gi="${gi}"][data-pi="${pi}"]`); if(tr) tr.classList.toggle('off', !checked); let cb = document.querySelector(`input[data-chk="${gi}-${pi}"]`); if(cb) cb.checked = !!checked; }); let cbF = document.getElementById('chkF-'+gi); if(cbF) cbF.checked = !!checked; recalculer(); }
+function toutCocher(v){ groupesActuels.forEach((g,gi)=> g.produits.forEach(p=> p.selected = v)); afficher(); recalculer(); }
+function totalSelectionne(){ let nb = 0, total = 0; groupesActuels.forEach(g=> g.produits.forEach(p=>{ if(p.selected!==false){ nb++; total += Number(p.total_ligne||0); } })); return {nb, total}; }
+function recalculer(){ document.querySelectorAll('tr[data-idx]').forEach(tr=>{ let gi = Number(tr.dataset.gi); let pi = Number(tr.dataset.pi); if(!groupesActuels[gi] || !groupesActuels[gi].produits[pi]) return; let q = parseFloat(tr.querySelector('.qte').value)||0; let pr = parseFloat(tr.querySelector('.prix').value)||0; let p = groupesActuels[gi].produits[pi]; p.quantite_commande = q; p.quantite_boites = q; p.quantite_a_commander = q; p.quantite_unites = q * (Number(p.contenance||1)||1); p.prix_achat = pr; p.total_ligne = q * pr; p.total_achat = q * pr; tr.querySelector('.total-ligne').textContent = fmtCmd(p.total_ligne)+' FC'; let eq = tr.querySelector('.eq-unites'); if(eq) eq.textContent = `= ${p.quantite_unites} ${abrevUnite(p.unite_vente||'')}`; }); groupesActuels.forEach((g,gi)=>{ g.total = g.produits.reduce((s,p)=> s + (p.selected===false ? 0 : (Number(p.total_ligne)||0)),0); let el = document.getElementById('total-'+gi); if(el) el.textContent = 'TOTAL POUR '+g.fournisseur+' = '+fmtCmd(g.total)+' FC'; }); let sel = totalSelectionne(); let tg = document.getElementById('total-general'); if(tg) tg.textContent = 'TOTAL GÉNÉRAL = '+fmtCmd(sel.total)+' FC'; document.getElementById('resume').textContent = groupesActuels.length+' fournisseur(s) • '+sel.nb+' produit(s) coché(s) • Total : '+fmtCmd(sel.total)+' FC'; }
+function nomSiteGroupe(g){ if(typeActuel==='DEPOT') return 'Dépôt Central'; if(typeActuel==='UN_SITE') return titreActuel; if(g.site) return g.site==='DEPOT' ? 'Dépôt Central' : g.site; return g.produits && g.produits[0] ? g.produits[0].site : titreActuel; }
+function afficher(){ let el = document.getElementById('resultat'); let filtre = (document.getElementById('rechercheFournisseur').value||'').toLowerCase().trim(); if(!groupesActuels.length){ el.innerHTML = `<div class="card">👆 Clique sur <b>Générer</b>.</div>`; return; } let groupesFiltres = []; groupesActuels.forEach((g,gi)=>{ if(!filtre){ groupesFiltres.push({g, gi, produits: g.produits}); return; } if(g.fournisseur.toLowerCase().includes(filtre)){ groupesFiltres.push({g, gi, produits: g.produits}); } else { let prods = g.produits.filter(p => String(p.produit_nom||'').toLowerCase().includes(filtre) || String(p.site||'').toLowerCase().includes(filtre)); if(prods.length) groupesFiltres.push({g, gi, produits: prods}); } }); if(!groupesFiltres.length){ el.innerHTML = `<div class="card">Aucun résultat pour "${filtre}"</div>`; return; } let sel = totalSelectionne(); document.getElementById('resume').textContent = groupesActuels.length+' fournisseur(s) • '+sel.nb+' produit(s) coché(s) • Total : '+fmtCmd(sel.total)+' FC'; let html = `<h3>🧾 COMMANDE - ${titreActuel} • ${new Date().toLocaleString()}</h3>`; groupesFiltres.forEach(({g,gi,produits})=>{ let siteLabel = (typeActuel==='TOUS_SITES' || typeActuel==='DEPOT_TOUS') ? ` • 📍 ${nomSiteGroupe(g)}` : ''; let toutCoche = g.produits.every(p=> p.selected!==false); html += `<div class="card"><h3 style="margin:0 0 10px;display:flex;gap:8px;align-items:center"><input type="checkbox" class="chk" id="chkF-${gi}" ${toutCoche?'checked':''} onchange="toggleFournisseur(${gi}, this.checked)"> Fournisseur ${gi+1} - 🧾 ${g.fournisseur}${siteLabel}</h3><table><tr><th style="width:30px">✅</th><th>Produit</th><th>Site</th><th>Stock</th><th>Alerte / Max</th><th>Qté à Acheter</th><th>Prix Achat</th><th>Total</th></tr>`; produits.forEach((p)=>{ let pi = g.produits.indexOf(p); let coche = p.selected!==false; let qAchat = p.quantite_commande ?? p.quantite_boites; let uniteA = abrevUnite(p.unite_achat || 'BT'); let uniteV = abrevUnite(p.unite_vente || 'AMP'); html += `<tr data-idx="${pi}" data-gi="${gi}" data-pi="${pi}" class="${coche?'':'off'}"><td><input type="checkbox" class="chk" data-chk="${gi}-${pi}" ${coche?'checked':''} onchange="toggleProduit(${gi}, ${pi}, this.checked)"></td><td>${p.produit_nom}<br><small style="color:#facc15">${p.raison||''}</small></td><td>${p.site}</td><td>${p.stock_actuel} ${uniteV}</td><td>${p.stock_alerte} / ${p.stock_max} ${uniteV}</td><td><input class="qte" type="number" min="0" value="${qAchat}" oninput="recalculer()"> <b>${uniteA}</b><br><small class="eq-unites" style="color:#9aa3b2">= ${p.quantite_unites} ${uniteV}</small></td><td><input class="prix" type="number" min="0" value="${p.prix_achat}" oninput="recalculer()"><br><small style="color:#9aa3b2">/ ${uniteA}</small></td><td class="total-ligne"><b>${fmtCmd(p.total_ligne)} FC</b></td></tr>`; }); html += `</table><div id="total-${gi}" style="text-align:right;font-weight:900;margin-top:10px">TOTAL POUR ${g.fournisseur} = ${fmtCmd(g.total)} FC</div></div>`; }); html += `<div class="card" style="background:#facc15;color:#000;text-align:center"><h2 id="total-general" style="margin:0">TOTAL GÉNÉRAL = ${fmtCmd(sel.total)} FC</h2></div>`; el.innerHTML = html; }
+function abrevUnite(u){ let s = String(u||'').toUpperCase().trim(); if(s==='PLAQUETTE' || s==='PLAQUETTES' || s==='PLQ' || s==='PLQS' || s==='PLAQ') return 'PL'; if(s==='BOITE' || s==='BOÎTE' || s==='BOITES' || s==='BOÎTES' || s==='BT' || s==='BTE') return 'BT'; if(s==='AMPOULE' || s==='AMPOULES' || s==='AMP') return 'AMP'; if(s==='FLACON' || s==='FLACONS' || s==='FL') return 'FL'; if(s==='BIDON' || s==='BIDONS') return 'BIDON'; if(s==='CARTON' || s==='CARTONS' || s==='CTN') return 'CTN'; if(s==='SACHET' || s==='SACHETS' || s==='SCH') return 'SCH'; if(s==='COMPRIME' || s==='COMPRIMES' || s==='CPR') return 'CPR'; if(s==='GELULE' || s==='GELULES' || s==='GEL') return 'GEL'; if(s==='TUBE' || s==='TUBES') return 'TUBE'; if(s==='LITRE' || s==='LITRES' || s==='L') return 'L'; if(s==='KG' || s==='KILOGRAMME') return 'KG'; if(s==='PAQUET' || s==='PAQUETS' || s==='PQT') return 'PQT'; return s; }
+function preparerImpression(){ if(!groupesActuels.length) return alert('Génère d’abord la commande'); recalculer(); let groupesFiltres = groupesActuels.map(g=> ({...g, produits: g.produits.filter(p=> p.selected!==false)})).filter(g=> g.produits.length); if(!groupesFiltres.length) return alert('Aucun produit coché'); let totalGeneral = groupesFiltres.reduce((s,g)=> s + g.produits.reduce((a,p)=> a + (Number(p.total_ligne)||0),0),0); let html = `<h2>DUBENZEN</h2><div class="entete">COMMANDE FOURNISSEUR<br>${titreActuel}<br>${new Date().toLocaleString()}</div>`; groupesFiltres.forEach((g, idx)=>{ let siteLabel = (typeActuel==='TOUS_SITES' || typeActuel==='DEPOT_TOUS') ? ` - ${nomSiteGroupe(g)}` : ''; html += `<div class="fournisseur">Fournisseur ${idx+1} - ${g.fournisseur}${siteLabel}</div><table><tr><th>PRODUIT</th><th style="text-align:center">QTÉ</th><th style="text-align:right">TOTAL</th></tr>`; g.produits.forEach(p=>{ let qAchat = p.quantite_commande ?? p.quantite_boites; let uniteA = abrevUnite(p.unite_achat || 'BT'); html += `<tr><td>${p.produit_nom}</td><td class="q">${qAchat} ${uniteA}</td><td class="t">${fmtCmd(p.total_ligne)}</td></tr>`; }); let totF = g.produits.reduce((a,p)=> a + (Number(p.total_ligne)||0),0); html += `</table><div class="total-f">Total ${g.fournisseur} : ${fmtCmd(totF)} FC</div>`; }); html += `<div class="total-g">TOTAL GÉNÉRAL : ${fmtCmd(totalGeneral)} FC</div><div class="pied">Merci !<br>Signature : ....................</div>`; document.getElementById('printZone').innerHTML = html; setTimeout(()=>window.print(), 200); }
+async function enregistrer(){
+  try{
+    if(!groupesActuels.length) return alert('Génère d’abord la commande');
+    recalculer();
+    let groupesFiltres = groupesActuels.map(g=> ({fournisseur: g.fournisseur, total: g.total, produits: g.produits.filter(p=> p.selected!==false)})).filter(g=> g.produits.length);
+    if(!groupesFiltres.length) return alert('Aucun produit coché');
+    let totalGeneral = groupesFiltres.reduce((s,g)=> s + g.produits.reduce((a,p)=> a + (Number(p.total_ligne)||0),0),0);
+    let cmd = { id: Date.now().toString(), date: new Date().toLocaleString(), titre: titreActuel, type: document.getElementById('type').value, siteId: siteIdActuel, site: titreActuel, groupes: JSON.parse(JSON.stringify(groupesFiltres)), total: totalGeneral, statut: 'En attente' };
+    await sauverCommande(cmd);
+    alert('✅ Commande enregistrée : '+totalGeneral.toLocaleString()+' FC');
+    window.location.href = 'commandes-historique.html';
+  }catch(err){ console.error(err); alert('❌ ERREUR : ' + err.message); }
+}
+remplirSites(); onTypeChange();
+</script>
+</body>
+</html>

@@ -1,0 +1,353 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Historique Ventes</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body style="background:#05070a;color:#fff;font-family:Arial;padding:14px" oncontextmenu="return false">
+<style>
+*{box-sizing:border-box;-webkit-touch-callout:none;-webkit-user-select:none !important;user-select:none !important}
+input,select,textarea{-webkit-user-select:text !important;user-select:text !important}
+.card{background:#111827;border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:14px}.input{width:100%;background:#000;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:12px;color:#fff;outline:none;margin-bottom:10px}.row{padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06)}.btn-red{background:#ef4444;color:#fff;border:none;padding:6px 10px;border-radius:8px;font-weight:800;cursor:pointer;font-size:11px}
+.item{display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px dashed rgba(255,255,255,.08);font-size:13px}
+.item:last-child{border-bottom:none}
+.periode-btn{padding:9px 12px;border-radius:999px;border:1px solid #333;background:#111827;color:#fff;cursor:pointer;font-weight:800;font-size:12px}
+.periode-btn.active{background:#22c55e;color:#000;border-color:#22c55e}
+.btn-action{flex:1;padding:12px;border-radius:12px;border:none;font-weight:900;cursor:pointer;font-size:13px}
+#zoneImpression{display:none}
+@page{ size:80mm auto; margin:0 !important; padding:0 !important; }
+@media print{
+  html,body{ width:80mm !important; max-width:80mm !important; margin:0 !important; padding:0 !important; background:#fff !important; color:#000 !important; }
+  body > *:not(#zoneImpression){ display:none !important; }
+  #zoneImpression{ display:block !important; width:80mm !important; max-width:80mm !important; margin:0 !important; padding:4mm 4mm !important; color:#000 !important; background:#fff !important; font-family:Arial, monospace !important; font-size:12px !important; line-height:1.6 !important; }
+  #zoneImpression *{ color:#000 !important; background:transparent !important; max-width:100% !important; }
+}
+</style>
+
+<div id="zoneImpression"></div>
+
+<h2>🧾 Ventes - <span id="siteName"></span></h2>
+<input id="search" class="input" placeholder="Chercher..." oninput="render()">
+
+<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+  <button id="ongVentes" onclick="setOnglet('VENTES')" style="flex:1;padding:12px;border-radius:12px;background:#22c55e;color:#000;border:none;font-weight:900;cursor:pointer">💰 VENTES</button>
+  <button id="ongProformas" onclick="setOnglet('PROFORMAS')" style="flex:1;padding:12px;border-radius:12px;background:#111827;color:#fff;border:1px solid #333;font-weight:900;cursor:pointer">🧾 PROFORMAS <span id="badgeProforma" style="background:#facc15;color:#000;padding:2px 8px;border-radius:100px;font-size:11px">0</span></button>
+  <button id="ongTout" onclick="setOnglet('TOUT')" style="flex:1;padding:12px;border-radius:12px;background:#111827;color:#fff;border:1px solid #333;font-weight:900;cursor:pointer">📋 TOUT</button>
+</div>
+
+<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+  <button class="periode-btn active" id="btnAuj" onclick="setPeriode('aujourd_hui')">Aujourd'hui</button>
+  <button class="periode-btn" id="btnHier" onclick="setPeriode('hier')">Hier</button>
+  <button class="periode-btn" id="btnSemaine" onclick="setPeriode('semaine')">7 jours</button>
+  <button class="periode-btn" id="btnMois" onclick="setPeriode('mois')">Ce mois</button>
+  <button class="periode-btn" id="btnTout" onclick="setPeriode('tout')">Tout</button>
+  <button class="periode-btn" id="btnPerso" onclick="setPeriode('perso')">Du 01 au ...</button>
+</div>
+
+<div id="boxPerso" style="display:none;margin-bottom:10px;background:rgba(34,197,94,.08);border:1px solid #22c55e;border-radius:14px;padding:12px">
+  <div style="display:flex;gap:8px;align-items:center">
+    <div style="flex:1"><label style="font-size:11px;color:#94a3b8">Du</label><input type="date" id="dateDebut" class="input" style="margin:4px 0 0" onchange="render()"></div>
+    <div style="font-weight:900;color:#94a3b8">→</div>
+    <div style="flex:1"><label style="font-size:11px;color:#94a3b8">Au</label><input type="date" id="dateFin" class="input" style="margin:4px 0 0" onchange="render()"></div>
+  </div>
+</div>
+
+<div style="display:flex;gap:8px;margin-bottom:10px">
+  <button class="btn-action" style="background:#22c55e;color:#000" onclick="exportExcel()">Excel</button>
+  <button class="btn-action" style="background:#2563eb;color:#fff" onclick="exportCSV()">CSV</button>
+  <button class="btn-action" style="background:#facc15;color:#000" onclick="imprimerVentes()">Imprimer</button>
+</div>
+
+<div id="zoneVentes" class="card"><div><b id="caFiltre" style="color:#22c55e">0 FC</b> - <span id="nb">0 ventes</span> - <span id="labelPeriode" style="color:#94a3b8;font-size:12px"></span></div><div id="list" style="margin-top:10px"></div></div>
+
+<div id="zoneProformas" class="card" style="display:none;margin-top:12px"><div><b id="caProforma" style="color:#facc15">0 FC</b> - <span id="nbProforma">0 proformas</span> - <span id="labelPeriodeProforma" style="color:#94a3b8;font-size:12px"></span></div><div id="listProformas" style="margin-top:10px"></div></div>
+
+<script>
+function fmt(n){return Number(n||0).toLocaleString('fr-FR',{minimumFractionDigits:2})+' FC'}
+function getMe(){try{var u=JSON.parse(localStorage.getItem('user')||'{}');var uid=localStorage.getItem('dub_current_user_id')||u.id||'';var us=JSON.parse(localStorage.getItem('dub_users')||'[]');var me=u;for(var i=0;i<us.length;i++){if(String(us[i].id)===String(uid)){me=us[i];break}}return{site:String(me.siteId||me.siteName||me.site||u.siteId||'victoire').toLowerCase(), nom:me.nom||me.username||me.name||''}}catch(e){return{site:'victoire',nom:''}}}
+var ME=getMe();document.getElementById('siteName').innerText=ME.site.toUpperCase();
+function getVentes(){try{return JSON.parse(localStorage.getItem('dub_ventes')||'[]')}catch(e){return[]}}
+function getProformas(){try{return JSON.parse(localStorage.getItem('dub_proformas')||'[]')}catch(e){return[]}}
+function grouper(list){
+ var map={};list.forEach(function(v,i){
+  var tid=v.transactionId||v.idVente||v.venteId||null;
+  var key=tid?'TX_'+tid:'L_'+i;
+  if(!map[key])map[key]={date:v.date||'',client:v.client||'Client',vendeur:v.vendeurNom||v.vendeur||'Inconnu',total:0,qte:0,items:[],tid:tid||v.id};
+  var qte=+v.qte||1;
+  var pvUnit=+v.pv||+v.prix||+v.prixVente||0;
+  var totalLigne=+v.valeurPV||+v.total||+v.montant||0;
+  if(pvUnit===0 && totalLigne>0 && qte>0) pvUnit=totalLigne/qte;
+  if(totalLigne===0) totalLigne=pvUnit*qte;
+  map[key].total+=totalLigne;
+  map[key].qte+=qte;
+  map[key].items.push({produit:v.produit||v.nom||'Produit', qte:qte, pv:pvUnit, total:totalLigne});
+ });
+ var out=[];for(var k in map)out.push(map[k]);out.sort(function(a,b){return new Date(b.date)-new Date(a.date)});return out;
+}
+var PERIODE='aujourd_hui';
+var ONGLET='VENTES';
+var VENTES_FILTREES=[];
+function fmtDateLocal(d){ var y=d.getFullYear(); var m=String(d.getMonth()+1).padStart(2,'0'); var j=String(d.getDate()).padStart(2,'0'); return y+'-'+m+'-'+j; }
+function setOnglet(mode){
+  ONGLET=mode;
+  document.getElementById('ongVentes').style.background = mode==='VENTES' ? '#22c55e' : '#111827';
+  document.getElementById('ongVentes').style.color = mode==='VENTES' ? '#000' : '#fff';
+  document.getElementById('ongProformas').style.background = mode==='PROFORMAS' ? '#facc15' : '#111827';
+  document.getElementById('ongProformas').style.color = mode==='PROFORMAS' ? '#000' : '#fff';
+  document.getElementById('ongTout').style.background = mode==='TOUT' ? '#fff' : '#111827';
+  document.getElementById('ongTout').style.color = mode==='TOUT' ? '#000' : '#fff';
+  document.getElementById('zoneVentes').style.display = (mode==='VENTES'||mode==='TOUT') ? 'block' : 'none';
+  document.getElementById('zoneProformas').style.display = (mode==='PROFORMAS'||mode==='TOUT') ? 'block' : 'none';
+  render();
+}
+function setPeriode(p){
+  PERIODE=p;
+  ['btnAuj','btnHier','btnSemaine','btnMois','btnTout','btnPerso'].forEach(function(id){ document.getElementById(id).classList.remove('active'); });
+  if(p==='aujourd_hui') document.getElementById('btnAuj').classList.add('active');
+  if(p==='hier') document.getElementById('btnHier').classList.add('active');
+  if(p==='semaine') document.getElementById('btnSemaine').classList.add('active');
+  if(p==='mois') document.getElementById('btnMois').classList.add('active');
+  if(p==='tout') document.getElementById('btnTout').classList.add('active');
+  if(p==='perso'){
+    document.getElementById('btnPerso').classList.add('active');
+    document.getElementById('boxPerso').style.display='block';
+    var auj=new Date();
+    var premier=auj.getFullYear()+'-'+String(auj.getMonth()+1).padStart(2,'0')+'-01';
+    if(!document.getElementById('dateDebut').value) document.getElementById('dateDebut').value=premier;
+    if(!document.getElementById('dateFin').value) document.getElementById('dateFin').value=fmtDateLocal(auj);
+  } else {
+    document.getElementById('boxPerso').style.display='none';
+  }
+  render();
+}
+function dansPeriode(dateStr){
+  if(PERIODE==='tout') return true;
+  var d=String(dateStr||'').slice(0,10);
+  if(!d) return false;
+  var auj=new Date(); auj.setHours(0,0,0,0);
+  if(PERIODE==='aujourd_hui') return d===fmtDateLocal(auj);
+  if(PERIODE==='hier'){ var h=new Date(auj); h.setDate(h.getDate()-1); return d===fmtDateLocal(h); }
+  if(PERIODE==='semaine'){ var s=new Date(auj); s.setDate(s.getDate()-6); return d>=fmtDateLocal(s) && d<=fmtDateLocal(auj); }
+  if(PERIODE==='mois'){ return d.slice(0,7)===fmtDateLocal(auj).slice(0,7); }
+  if(PERIODE==='perso'){
+    var deb=document.getElementById('dateDebut').value;
+    var fin=document.getElementById('dateFin').value;
+    if(deb && d<deb) return false;
+    if(fin && d>fin) return false;
+    return true;
+  }
+  return true;
+}
+function labelPeriode(){
+  var auj=new Date();
+  if(PERIODE==='aujourd_hui') return auj.toLocaleDateString('fr-FR');
+  if(PERIODE==='hier'){ var h=new Date(auj); h.setDate(h.getDate()-1); return h.toLocaleDateString('fr-FR'); }
+  if(PERIODE==='semaine') return "7 derniers jours";
+  if(PERIODE==='mois') return auj.toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
+  if(PERIODE==='tout') return "Tout";
+  if(PERIODE==='perso'){
+    var deb=document.getElementById('dateDebut').value;
+    var fin=document.getElementById('dateFin').value;
+    var f=function(s){ if(!s) return ''; var p=s.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; };
+    return "Du "+f(deb)+" Au "+f(fin);
+  }
+  return "";
+}
+function getLignesFiltrees(){
+  var q=(document.getElementById('search').value||'').toLowerCase();
+  var list=getVentes().filter(function(v){return String(v.siteId||v.site||'').toLowerCase()===ME.site});
+  list=list.filter(function(v){return dansPeriode(v.date)});
+  if(q) list=list.filter(function(v){return (String(v.client||'')+' '+String(v.vendeurNom||v.vendeur||'')+' '+String(v.produit||'')).toLowerCase().includes(q)});
+  return list;
+}
+function render(){
+ var q=(document.getElementById('search').value||'').toLowerCase();
+ var list=getVentes().filter(function(v){var s=String(v.siteId||v.site||'').toLowerCase();return s===ME.site||s===''});
+ var g=grouper(list).filter(function(x){
+  if(!dansPeriode(x.date)) return false;
+  if(q){
+    var txt=(x.client+' '+x.vendeur+' '+x.items.map(function(it){return it.produit}).join(' ')).toLowerCase();
+    if(!txt.includes(q)) return false;
+  }
+  return true;
+ });
+ VENTES_FILTREES=g;
+ var tot=0;g.forEach(function(x){tot+=x.total});
+ document.getElementById('caFiltre').innerText=fmt(tot);document.getElementById('nb').innerText=g.length+' ventes';
+ document.getElementById('labelPeriode').innerText=labelPeriode();
+ var h='';if(!g.length)h='<div style="color:#64748b">Aucune vente</div>';
+ g.forEach(function(x){
+  var itemsHtml=x.items.map(function(it){
+    return '<div class="item"><span><b>'+it.produit+'</b><br><small style="color:#94a3b8">'+it.qte+' x '+fmt(it.pv)+'</small></span><b style="color:#fff">'+fmt(it.total)+'</b></div>';
+  }).join('');
+  h+='<div class="row">'
+   +'<div style="display:flex;justify-content:space-between;gap:8px"><span><b style="font-size:15px">'+x.client+'</b> - '+x.qte+' art<br><small style="color:#94a3b8">'+new Date(x.date).toLocaleString('fr-FR')+' • '+x.vendeur+'</small></span>'
+   +'<span style="text-align:right"><b style="color:#22c55e;font-size:16px">'+fmt(x.total)+'</b><br><button onclick="reimprimerVenteHistorique(\''+x.tid+'\')" style="background:#fff;color:#000;border:none;padding:6px 10px;border-radius:8px;font-weight:800;cursor:pointer;font-size:11px;margin-bottom:4px">🖨️ RÉIMPRIMER</button><br><button class="btn-red" onclick="annuler(\''+x.tid+'\')">ANNULER</button></span></div>'
+   +'<div style="background:rgba(0,0,0,.3);border-radius:12px;padding:8px 10px;margin-top:10px">'
+   +itemsHtml
+   +'</div></div>';
+ });
+ document.getElementById('list').innerHTML=h;
+ renderProformas();
+}
+function renderProformas(){
+  var q=(document.getElementById('search').value||'').toLowerCase();
+  var all=getProformas().filter(function(p){
+    var s=String(p.site||'').toLowerCase();
+    if(s && s!==ME.site) return false;
+    if(!dansPeriode(p.date)) return false;
+    if(q){
+      var txt=((p.client||'')+' '+(p.num||'')+' '+(p.phone||'')+' '+(p.vendeur||'')+' '+(p.items||[]).map(function(it){return it.nom}).join(' ')).toLowerCase();
+      if(!txt.includes(q)) return false;
+    }
+    return true;
+  });
+  var att=all.filter(function(p){ return (p.statut||'PROFORMA')==='PROFORMA'; });
+  document.getElementById('badgeProforma').innerText=att.length;
+  var tot=all.reduce(function(s,p){ return s+Number(p.total||0); },0);
+  document.getElementById('caProforma').innerText=fmt(tot);
+  document.getElementById('nbProforma').innerText=all.length+' proformas';
+  document.getElementById('labelPeriodeProforma').innerText=labelPeriode();
+  if(!all.length){ document.getElementById('listProformas').innerHTML='<div style="color:#64748b">Aucune proforma</div>'; return; }
+  var h='';
+  all.forEach(function(p){
+    var st=p.statut||'PROFORMA';
+    var label=st==='VENTE' ? '<span style="color:#22c55e;font-weight:800">✅ VENDUE</span>' : st==='ANNULEE' ? '<span style="color:#ef4444;font-weight:800">❌ ANNULEE</span>' : '<span style="color:#facc15;font-weight:800">⏳ EN ATTENTE</span>';
+    var itemsHtml=(p.items||[]).map(function(it){
+      var qq=it.qty||it.qte||0;
+      return '<div class="item"><span><b>'+it.nom+'</b><br><small style="color:#94a3b8">'+qq+' x '+fmt(it.pv)+'</small></span><b style="color:#fff">'+fmt(it.pv*qq)+'</b></div>';
+    }).join('');
+    var btns='';
+    if(st==='PROFORMA'){
+      btns='<button onclick="gerantVendreProforma(\''+p.num+'\')" style="background:#22c55e;color:#000;border:none;padding:8px 12px;border-radius:8px;font-weight:800;cursor:pointer;font-size:12px">✅ VENDRE</button> <button onclick="reimprimerProformaHistorique(\''+p.num+'\')" style="background:#fff;color:#000;border:none;padding:8px 12px;border-radius:8px;font-weight:800;cursor:pointer;font-size:12px">🖨️ RÉIMPRIMER</button> <button onclick="gerantAnnulerProforma(\''+p.num+'\')" style="background:#ef4444;color:#fff;border:none;padding:8px 12px;border-radius:8px;font-weight:800;cursor:pointer;font-size:12px">ANNULER</button>';
+    } else if(st==='VENTE'){
+      btns='<button onclick="reimprimerProformaHistorique(\''+p.num+'\')" style="background:#fff;color:#000;border:none;padding:8px 12px;border-radius:8px;font-weight:800;cursor:pointer;font-size:12px">🖨️ RÉIMPRIMER FACTURE</button> <span style="color:#22c55e;font-size:11px">→ '+(p.venteNum||'')+'</span>';
+    } else {
+      btns='<button onclick="reimprimerProformaHistorique(\''+p.num+'\')" style="background:#fff;color:#000;border:none;padding:8px 12px;border-radius:8px;font-weight:800;cursor:pointer;font-size:12px">🖨️ RÉIMPRIMER</button>';
+    }
+    h+='<div class="row">'
+      +'<div style="display:flex;justify-content:space-between;gap:8px"><span><b style="font-size:15px">'+p.client+'</b> - '+(p.totalQte||0)+' art<br><small style="color:#94a3b8">'+p.num+' • '+new Date(p.date).toLocaleString('fr-FR')+' • '+(p.vendeur||'')+' • Tel: '+(p.phone||'-')+'</small><br>'+label+'</span>'
+      +'<span style="text-align:right"><b style="color:#facc15;font-size:16px">'+fmt(p.total)+'</b><br><div style="margin-top:6px;display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap">'+btns+'</div></span></div>'
+      +'<div style="background:rgba(0,0,0,.3);border-radius:12px;padding:8px 10px;margin-top:10px">'+itemsHtml+'</div></div>';
+  });
+  document.getElementById('listProformas').innerHTML=h;
+}
+function gerantVendreProforma(num){
+  if(!confirm('Convertir '+num+' en VENTE ? Le stock sera deduit.')) return;
+  localStorage.setItem('dub_convertir_proforma_num', num);
+  location.href='vente.html?convertir='+num;
+}
+function gerantAnnulerProforma(num){
+  if(!confirm('Annuler proforma '+num+' ?')) return;
+  var list=getProformas();
+  var p=null; for(var i=0;i<list.length;i++){ if(list[i].num===num){ p=list[i]; break; } }
+  if(!p) return;
+  if(p.statut==='VENTE'){ alert('Deja vendue'); return; }
+  p.statut='ANNULEE';
+  localStorage.setItem('dub_proformas', JSON.stringify(list));
+  render();
+}
+// ✅ REIMPRIMER VENTE DEPUIS HISTORIQUE
+function reimprimerVenteHistorique(tid){
+  var g = null;
+  for(var i=0;i<VENTES_FILTREES.length;i++){ if(String(VENTES_FILTREES[i].tid)===String(tid)){ g=VENTES_FILTREES[i]; break; } }
+  if(!g){ alert('Vente introuvable'); return; }
+  var html = '';
+  html+='<div style="text-align:center;padding:6px 0 10px"><b style="font-size:15px">DUBENZENE - '+ME.site.toUpperCase()+'</b><div style="margin-top:6px">*** FACTURE DE VENTE ***</div><div style="margin-top:4px">N° '+tid+'</div><div style="margin-top:4px">'+new Date(g.date).toLocaleString('fr-FR')+'</div></div>';
+  html+='<div style="border-top:1px dashed #000;margin:8px 0 12px"></div>';
+  html+='<div>Client : <b>'+g.client+'</b></div><div>Vendeur : '+g.vendeur+'</div>';
+  html+='<div style="border-top:1px dashed #000;margin:8px 0 12px"></div>';
+  g.items.forEach(function(it){
+    html+='<div style="margin:4px 0"><b>'+it.produit+'</b></div><div style="display:flex;justify-content:space-between"><span>'+it.qte+' x '+Number(it.pv).toLocaleString('fr-FR')+'</span><b>'+Number(it.total).toLocaleString('fr-FR')+'</b></div>';
+  });
+  html+='<div style="border-top:1px dashed #000;margin:12px 0"></div>';
+  html+='<div style="display:flex;justify-content:space-between;font-size:14px"><b>TOTAL :</b><b>'+Number(g.total).toLocaleString('fr-FR',{minimumFractionDigits:2})+' FC</b></div>';
+  html+='<div style="text-align:center;margin-top:14px">*** MERCI ***</div><br><br><br>';
+  document.getElementById('zoneImpression').innerHTML=html;
+  window.print();
+}
+// ✅ REIMPRIMER PROFORMA / FACTURE PROFORMA DEPUIS HISTORIQUE
+function reimprimerProformaHistorique(num){
+  var list = getProformas();
+  var p = null; for(var i=0;i<list.length;i++){ if(list[i].num===num){ p=list[i]; break; } }
+  if(!p){ alert('Proforma introuvable'); return; }
+  var html='';
+  html+='<div style="text-align:center;padding:6px 0 10px"><b style="font-size:15px">DUBENZENE - '+ME.site.toUpperCase()+'</b><div style="margin-top:6px">*** FACTURE '+(p.statut==='VENTE'?'DE VENTE':'PROFORMA')+' ***</div><div style="margin-top:4px">N° '+p.num+'</div><div style="margin-top:4px">'+new Date(p.date).toLocaleString('fr-FR')+'</div><div style="margin-top:4px">Statut : '+(p.statut||'PROFORMA')+'</div></div>';
+  html+='<div style="border-top:1px dashed #000;margin:8px 0 12px"></div>';
+  html+='<div>Client : <b>'+p.client+'</b></div><div>Tel : '+(p.phone||'-')+'</div><div>Vendeur : '+(p.vendeur||'')+'</div>';
+  if(p.venteNum) html+='<div>Facture vente : '+(p.venteNum)+'</div>';
+  html+='<div style="border-top:1px dashed #000;margin:8px 0 12px"></div>';
+  (p.items||[]).forEach(function(it){ var q=it.qty||it.qte||0; html+='<div style="margin:4px 0"><b>'+it.nom+'</b></div><div style="display:flex;justify-content:space-between"><span>'+q+' x '+Number(it.pv).toLocaleString('fr-FR')+'</span><b>'+Number(it.pv*q).toLocaleString('fr-FR')+'</b></div>'; });
+  html+='<div style="border-top:1px dashed #000;margin:12px 0"></div>';
+  html+='<div style="display:flex;justify-content:space-between;font-size:14px"><b>TOTAL :</b><b>'+Number(p.total).toLocaleString('fr-FR',{minimumFractionDigits:2})+' FC</b></div>';
+  html+='<div style="text-align:center;margin-top:14px">*** MERCI ***</div><br><br><br>';
+  document.getElementById('zoneImpression').innerHTML=html;
+  window.print();
+}
+function annuler(tid){
+ if(!confirm('Annuler cette vente ?'))return;
+ var ventes=getVentes();var aAnnuler=ventes.filter(function(v){return String(v.transactionId||v.id)===String(tid)});
+ var sp={};try{sp=JSON.parse(localStorage.getItem('dub_sites_produits')||'{}')}catch(e){}
+ var list=sp[ME.site]||[];aAnnuler.forEach(function(v){var trouve=false;for(var i=0;i<list.length;i++){if((list[i].nom||'').toLowerCase()===String(v.produit||'').toLowerCase()){var cur=+list[i].stock||0;list[i].stock=cur+(+v.qte||1);list[i].stock_site=list[i].stock;list[i].quantite=list[i].stock;list[i].qte=list[i].stock;trouve=true;break}}if(!trouve)list.push({nom:v.produit,stock:+v.qte||1,stock_site:+v.qte||1,pv:+v.pv||0})});
+ sp[ME.site]=list;localStorage.setItem('dub_sites_produits',JSON.stringify(sp));
+ var reste=ventes.filter(function(v){return String(v.transactionId||v.id)!==String(tid)});
+ localStorage.setItem('dub_ventes',JSON.stringify(reste));render();
+}
+function exportCSV(){
+ if(ONGLET==='PROFORMAS'){
+   var list=getProformas().filter(function(p){ return String(p.site||'').toLowerCase()===ME.site && dansPeriode(p.date); });
+   if(!list.length){ alert('Aucune proforma'); return; }
+   var csv='Numero;Date;Client;Tel;Vendeur;Statut;Total;VenteNum;Articles\n';
+   list.forEach(function(p){ csv+=p.num+';'+p.date+';'+p.client+';'+(p.phone||'')+';'+(p.vendeur||'')+';'+(p.statut||'PROFORMA')+';'+p.total+';'+(p.venteNum||'')+';'+(p.items||[]).map(function(it){return it.nom+' x'+(it.qty||it.qte)}).join(' | ')+'\n'; });
+   var a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv'}));a.download='proformas-'+ME.site+'-'+PERIODE+'.csv';a.click(); return;
+ }
+ var list2=getLignesFiltrees();
+ if(!list2.length){ alert('Aucune vente'); return; }
+ var csv2='Date;Site;Vendeur;Client;Produit;Qte;PV Unitaire;Total\n';
+ list2.forEach(function(v){
+  var qte=+v.qte||1;
+  var pvUnit=+v.pv||+v.prix||0;
+  var totalLigne=+v.valeurPV||+v.total||+v.montant||(pvUnit*qte);
+  if(pvUnit===0 && totalLigne>0) pvUnit=totalLigne/qte;
+  csv2+=v.date+';'+ME.site+';'+(v.vendeurNom||v.vendeur||'')+';'+(v.client||'')+';'+(v.produit||'')+';'+qte+';'+pvUnit.toFixed(2)+';'+totalLigne.toFixed(2)+'\n';
+ });
+ var a2=document.createElement('a');a2.href=URL.createObjectURL(new Blob([csv2],{type:'text/csv'}));a2.download='ventes-'+ME.site+'-'+PERIODE+'.csv';a2.click();
+}
+function exportExcel(){
+ var list=getLignesFiltrees();
+ if(!list.length){ alert('Aucune vente'); return; }
+ var data=[['DATE','SITE','VENDEUR','CLIENT','PRODUIT','QTE','PV UNITAIRE','TOTAL']];
+ list.forEach(function(v){
+  var qte=+v.qte||1;
+  var pvUnit=+v.pv||+v.prix||0;
+  var totalLigne=+v.valeurPV||+v.total||+v.montant||(pvUnit*qte);
+  if(pvUnit===0 && totalLigne>0) pvUnit=totalLigne/qte;
+  data.push([new Date(v.date).toLocaleString('fr-FR'), ME.site.toUpperCase(), v.vendeurNom||v.vendeur||'', v.client||'', v.produit||'', qte, pvUnit, totalLigne]);
+ });
+ var ws=XLSX.utils.aoa_to_sheet(data);
+ ws['!cols']=[{wch:20},{wch:12},{wch:18},{wch:18},{wch:35},{wch:8},{wch:14},{wch:14}];
+ var wb=XLSX.utils.book_new();
+ XLSX.utils.book_append_sheet(wb, ws, 'Ventes');
+ XLSX.writeFile(wb, 'ventes-'+ME.site+'-'+PERIODE+'.xlsx');
+}
+function imprimerVentes(){
+ if(!VENTES_FILTREES.length){ alert('Aucune vente'); return; }
+ var tot=0; var totQte=0;
+ VENTES_FILTREES.forEach(function(x){ tot+=x.total; totQte+=x.qte; });
+ var dateImp=new Date().toLocaleDateString('fr-FR')+' '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+ var html='';
+ html+='<div style="text-align:center;padding:6px 0 10px"><b style="font-size:15px">DUBENZENE - '+ME.site.toUpperCase()+'</b><div style="margin-top:6px">'+labelPeriode()+'</div><div style="margin-top:4px">'+dateImp+'</div></div>';
+ html+='<div style="border-top:1px dashed #000;margin:8px 0 12px"></div>';
+ html+='<div style="display:flex;justify-content:space-between;font-size:11px;padding-bottom:6px"><span>HEURE</span><span>PRODUIT</span><span>QTÉ</span><span>TOTAL</span></div>';
+ html+='<div style="border-top:1px dashed #000;margin:0 0 10px"></div>';
+ VENTES_FILTREES.forEach(function(x){
+  var heure=new Date(x.date).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  x.items.forEach(function(it){
+    html+='<div style="display:flex;justify-content:space-between;gap:8px;margin:8px 0;padding:4px 0"><span style="width:42px">'+heure+'</span><span style="flex:1">'+it.produit+'</span><span style="width:30px;text-align:center">'+it.qte+'</span><b style="text-align:right">'+Number(it.total).toLocaleString('fr-FR',{minimumFractionDigits:2})+'</b></div>';
+  });
+ });
+ html+='<div style="border-top:1px dashed #000;margin:12px 0"></div>';
+ html+='<div style="display:flex;justify-content:space-between;font-size:14px;padding:6px 0"><b>TOTAL : '+totQte+' art</b><b>'+fmt(tot)+'</b></div>';
+ html+='<div style="text-align:center;margin-top:14px;padding-bottom:6px;font-size:10px">*** MERCI ***</div><br><br><br>';
+ document.getElementById('zoneImpression').innerHTML=html;
+ window.print();
+}
+render();
+</script></body></html>

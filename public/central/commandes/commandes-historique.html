@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Historique Commandes - DUBENZEN</title>
+<style>
+body{background:#0b0e14;color:#fff;font-family:Arial,sans-serif;padding:14px;margin:0}
+.card{background:#151a26;border:1px solid #222735;border-radius:12px;padding:14px;margin-bottom:14px}
+button{padding:8px 14px;border-radius:8px;border:0;cursor:pointer;font-weight:800}
+.btn-yellow{background:#facc15;color:#000}
+.btn-dark{background:#1f2937;color:#fff;border:1px solid #333}
+.btn-red{background:#dc3545;color:#fff}
+.btn-green{background:#22c55e;color:#fff}
+.btn-grey{background:#6b7280;color:#fff}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:8px;border-bottom:1px solid #222735;text-align:left}
+th{color:#facc15}
+input,select{background:#0b0e14;color:#fff;border:1px solid #facc15;border-radius:8px;padding:8px;width:100%;font-size:13px}
+input.chk{width:22px;height:22px;cursor:pointer;accent-color:#22c55e;padding:0}
+.ligne-desactivee{opacity:.45;background:#1a1a1a}
+.ligne-desactivee td b{text-decoration:line-through}
+#printZone{display:none}
+@media print{
+  @page{ size:80mm auto; margin:0; }
+  body{background:#fff;color:#000;margin:0;padding:0;font-family:'Courier New',monospace}
+  .no-print, #liste, #detail{ display:none !important; }
+  #printZone{ display:block !important; width:80mm; padding:3mm 2mm; font-size:11px; color:#000; }
+  #printZone h2{ font-size:14px; text-align:center; margin:0 0 2mm; }
+  #printZone .entete{ text-align:center; font-size:11px; border-bottom:1px dashed #000; padding-bottom:2mm; margin-bottom:2mm; }
+  #printZone .fournisseur{ font-size:12px; font-weight:900; margin:3mm 0 1mm; border-top:1px dashed #000; padding-top:2mm; }
+  #printZone table{ width:100%; border-collapse:collapse; font-size:11px; }
+  #printZone th{ text-align:left; border-bottom:1px dashed #000; padding:1mm 0; font-size:10px; }
+  #printZone td{ padding:1mm 0; border-bottom:1px dotted #ccc; vertical-align:top; }
+  #printZone td.q{ text-align:center; font-weight:900; }
+  #printZone td.t{ text-align:right; font-weight:900; }
+  #printZone .total-f{ text-align:right; font-weight:900; font-size:12px; border-top:1px dashed #000; padding:1mm 0; margin-bottom:2mm; }
+  #printZone .total-g{ text-align:center; font-weight:900; font-size:14px; border:1px solid #000; padding:2mm; margin-top:3mm; }
+  #printZone .pied{ text-align:center; font-size:10px; margin-top:3mm; }
+}
+</style>
+</head>
+<body>
+<div class="no-print">
+  <h2>📋 Historique des Commandes</h2>
+  <a href="commande-creer.html"><button class="btn-yellow">➕ Nouvelle Commande</button></a>
+  <button class="btn-dark" onclick="dbExporterSauvegarde()">⬇️ Sauvegarde</button><br><br>
+</div>
+<div id="liste" class="no-print"></div>
+<div id="detail" class="no-print"></div>
+<div id="printZone"></div>
+<script src="db.js"></script>
+<script src="commande.js"></script>
+<script>
+let commandeEnCoursEdit = null;
+function abrevUnite(u){
+  let s = String(u||'').toUpperCase().trim();
+  if(s==='PLAQUETTE' || s==='PLAQUETTES' || s==='PLQ' || s==='PLQS' || s==='PLAQ') return 'PL';
+  if(s==='BOITE' || s==='BOÎTE' || s==='BOITES' || s==='BOÎTES' || s==='BT' || s==='BTE') return 'BT';
+  if(s==='AMPOULE' || s==='AMPOULES' || s==='AMP') return 'AMP';
+  if(s==='FLACON' || s==='FLACONS' || s==='FL') return 'FL';
+  if(s==='BIDON' || s==='BIDONS') return 'BIDON';
+  if(s==='CARTON' || s==='CARTONS' || s==='CTN') return 'CTN';
+  if(s==='SACHET' || s==='SACHETS' || s==='SCH') return 'SCH';
+  if(s==='COMPRIME' || s==='COMPRIMES' || s==='CPR') return 'CPR';
+  if(s==='GELULE' || s==='GELULES' || s==='GEL') return 'GEL';
+  if(s==='TUBE' || s==='TUBES') return 'TUBE';
+  if(s==='LITRE' || s==='LITRES' || s==='L') return 'L';
+  if(s==='KG' || s==='KILOGRAMME') return 'KG';
+  if(s==='PAQUET' || s==='PAQUETS' || s==='PQT') return 'PQT';
+  return s;
+}
+function getPrioriteFournisseur(nomFournisseur, siteId){
+  let fournisseurs = [];
+  try{ fournisseurs = JSON.parse(localStorage.getItem('dub_fournisseurs')||'[]'); }catch(e){}
+  if(!Array.isArray(fournisseurs)) fournisseurs = [];
+  let f = fournisseurs.find(x=>{
+    let nom = typeof x==='string' ? x : (x.nom||x.name||'');
+    return nom.toLowerCase() === (nomFournisseur||'').toLowerCase();
+  });
+  if(!f || typeof f==='string') return 999;
+  if(f.priorites && typeof f.priorites==='object'){
+    if(f.priorites[siteId] != null) return +f.priorites[siteId];
+    let cleNom = Object.keys(f.priorites).find(k=>k.toLowerCase() === String(siteId||'').toLowerCase());
+    if(cleNom) return +f.priorites[cleNom];
+  }
+  if(f.priorite != null) return +f.priorite;
+  return 999;
+}
+function getSiteDeCommande(c){ return c.siteId || c.site_id || c.site || c.site_nom || c.siteNom || 'DEPOT'; }
+function trierGroupesAvecIndex(groupes, siteId){
+  let avecIndex = (groupes||[]).map((g,gi)=>({ g, gi }));
+  avecIndex.sort((a,b)=>{
+    let pa = getPrioriteFournisseur(a.g.fournisseur, siteId);
+    let pb = getPrioriteFournisseur(b.g.fournisseur, siteId);
+    if(pa !== pb) return pa - pb;
+    return (a.g.fournisseur||'').localeCompare(b.g.fournisseur||'');
+  });
+  return avecIndex;
+}
+function afficherListe(){
+  let list = getCommandesSauvegardees();
+  let el = document.getElementById('liste');
+  if(!list.length){ el.innerHTML = `<div class="card">Aucune commande dans l'historique.</div>`; return; }
+  el.innerHTML = list.map(c=>{
+    let site = getSiteDeCommande(c);
+    return `<div class="card">
+    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <div><b>🧾 ${c.titre}</b><br><small>${c.date} • 📍 ${site} • ${(c.groupes||[]).length} fournisseur(s) ${c.modifiee ? '• ✏️ Modifiée' : ''}</small></div>
+      <div style="font-weight:900;color:#facc15">${fmtCmd(c.total)} FC</div>
+    </div>
+    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn-yellow" onclick="voir('${c.id}')">👁️ Voir</button>
+      <button class="btn-dark" onclick="modifier('${c.id}')">✏️ Corriger</button>
+      <button class="btn-dark" onclick="imprimerUne('${c.id}')">🖨️ Imprimer Thermique</button>
+      <button class="btn-red" onclick="suppr('${c.id}')">🗑️ Supprimer</button>
+    </div>
+  </div>`}).join('');
+}
+function estActif(p){
+  if(p.selected === false) return false;
+  if(p.actif === false) return false;
+  if(p.desactive === true) return false;
+  if(p.inactif === true) return false;
+  return true;
+}
+function calculReel(p){
+  if(!estActif(p)) return { qteAchat:0, cont:+p.contenance||1, uniteAchat:abrevUnite(p.unite_achat||p.conditionnement||'BT'), uniteVente:abrevUnite(p.unite_vente||p.unite_stock||''), besoinVente:0, prixVente:0, totalReel:0 };
+  let qteAchat = +p.quantite_commande || +p.quantite_boites || +p.quantite || +p.a_commander || 0;
+  let cont = +p.contenance || 1;
+  if(cont <= 0) cont = 1;
+  let uniteAchat = abrevUnite(p.unite_achat || p.conditionnement || 'BT');
+  let uniteVente = abrevUnite(p.unite_vente || p.unite_stock || '');
+  let prixVente = +p.prix_achat || +p.pa || +p.pau || 0;
+  if(p.total_ligne != null && p.contenance == null){
+    return { qteAchat, cont:1, uniteAchat, uniteVente, besoinVente: qteAchat, prixVente, totalReel: +p.total_ligne||0 };
+  }
+  let besoinVente = +p.besoin_vente || (qteAchat * cont);
+  if(+p.besoin_vente && cont > 0){ qteAchat = Math.ceil(+p.besoin_vente / cont); besoinVente = +p.besoin_vente; }
+  let totalReel = p.total_ligne != null ? (+p.total_ligne||0) : (besoinVente * prixVente);
+  if(p._qteModifiee) totalReel = qteAchat * prixVente;
+  return { qteAchat, cont, uniteAchat, uniteVente, besoinVente, prixVente, totalReel };
+}
+function texteQte(p){
+  let c = calculReel(p);
+  if(c.uniteVente && c.uniteAchat !== c.uniteVente && c.cont > 1){
+    return `<b style="color:#facc15;font-size:14px">${c.qteAchat} ${c.uniteAchat}</b><br><small style="color:#22c55e">= ${c.besoinVente} ${c.uniteVente} (1 ${c.uniteAchat} = ${c.cont} ${c.uniteVente})</small>`;
+  }
+  return `<b>${c.qteAchat} ${c.uniteAchat}</b>`;
+}
+function voir(id){
+  let c = getCommandeParId(id); if(!c) return;
+  let site = getSiteDeCommande(c);
+  let groupesTries = trierGroupesAvecIndex(c.groupes||[], site);
+  let html = `<div class="card"><h3>🧾 ${c.titre} • ${c.date} • 📍 ${site}</h3>`;
+  groupesTries.forEach(({g, gi})=>{
+    let totalGroupeReel = 0;
+    g.produits.forEach(p=>{ totalGroupeReel += calculReel(p).totalReel; });
+    let toutCoche = g.produits.every(estActif);
+    html += `<div style="border:1px solid #333;border-radius:10px;padding:10px;margin:10px 0">
+    <h4><input type="checkbox" class="chk" ${toutCoche?'checked':''} onchange="basculerFournisseurDirect('${c.id}', ${gi}, this.checked)" style="vertical-align:middle"> 🧾 ${g.fournisseur}</h4>
+    <table><tr><th style="width:30px">✅</th><th>Produit</th><th>Site</th><th>Stock</th><th>Alerte / Max</th><th>Qté</th><th>Prix</th><th>Total</th></tr>`;
+    g.produits.forEach((p, pi)=>{
+      let cr = calculReel(p);
+      let actif = estActif(p);
+      html += `<tr class="${actif ? '' : 'ligne-desactivee'}">
+      <td><input type="checkbox" class="chk" ${actif?'checked':''} onchange="basculerProduitDirect('${c.id}', ${gi}, ${pi}, this.checked)"></td>
+      <td>${p.produit_nom}<br><small style="color:#facc15">${p.raison||''}</small></td>
+      <td>${p.site||''}</td><td>${p.stock_actuel ?? ''} ${cr.uniteVente}</td><td>${p.stock_alerte ?? ''} / ${p.stock_max ?? ''}</td>
+      <td>${actif ? texteQte(p) : '<s>0</s>'}</td><td>${fmtCmd(cr.prixVente)} / ${cr.uniteAchat}</td><td><b>${fmtCmd(cr.totalReel)} FC</b></td></tr>`;
+    });
+    html += `</table><div style="text-align:right;font-weight:900;margin-top:8px">TOTAL ${g.fournisseur} = ${fmtCmd(totalGroupeReel)} FC</div></div>`;
+  });
+  let totalGeneralReel = 0;
+  c.groupes.forEach(g=>{ g.produits.forEach(p=>{ totalGeneralReel += calculReel(p).totalReel; }); });
+  html += `<div style="background:#facc15;color:#000;padding:12px;border-radius:10px;text-align:center"><h2 style="margin:0">TOTAL GÉNÉRAL = ${fmtCmd(totalGeneralReel)} FC</h2></div>
+  <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn-dark" onclick="modifier('${c.id}')">✏️ Corriger cette commande</button><button class="btn-dark" onclick="document.getElementById('detail').innerHTML=''">Fermer</button></div></div>`;
+  document.getElementById('detail').innerHTML = html;
+  window.scrollTo({top: document.getElementById('detail').offsetTop, behavior:'smooth'});
+}
+async function basculerProduitDirect(commandeId, gi, pi, checked){
+  let c = getCommandeParId(commandeId); if(!c) return;
+  let p = c.groupes[gi].produits[pi];
+  if(!p) return;
+  p.selected = !!checked; p.actif = !!checked; p.desactive = !checked;
+  await recalculerEtSauver(c); voir(commandeId);
+}
+async function basculerFournisseurDirect(commandeId, gi, checked){
+  let c = getCommandeParId(commandeId); if(!c) return;
+  c.groupes[gi].produits.forEach(p=>{ p.selected = !!checked; p.actif = !!checked; p.desactive = !checked; });
+  await recalculerEtSauver(c); voir(commandeId);
+}
+async function recalculerEtSauver(c){
+  c.groupes.forEach(g=>{ let t=0; g.produits.forEach(pp=>{ t += calculReel(pp).totalReel; }); g.total = t; });
+  let totalG = 0; c.groupes.forEach(g=>{ totalG += g.total; });
+  c.total = totalG; c.modifiee = true; c.date_modif = new Date().toLocaleString('fr-FR');
+  let ok = await sauvegarderCommandeExistante(c);
+  if(!ok) alert('⚠️ Sauvegarde impossible');
+}
+async function sauvegarderCommandeExistante(c){
+  try{
+    if(typeof dbSaveCommande === 'function'){
+      await dbSaveCommande(c);
+      if(typeof chargerCommandesCache === 'function') await chargerCommandesCache();
+      return true;
+    }
+    return false;
+  }catch(e){ console.error(e); return false; }
+}
+function modifier(id){
+  let c = getCommandeParId(id); if(!c) return;
+  commandeEnCoursEdit = JSON.parse(JSON.stringify(c));
+  renderEditFromMemory();
+}
+function renderEditFromMemory(){
+  let c = commandeEnCoursEdit;
+  let site = getSiteDeCommande(c);
+  let html = `<div class="card"><h3>✏️ Corriger : ${c.titre} • ${c.date} • 📍 ${site}</h3>`;
+  let groupesTries = trierGroupesAvecIndex(c.groupes, site);
+  groupesTries.forEach(({g, gi})=>{
+    let toutCoche = g.produits.every(estActif);
+    html += `<h4 style="margin-top:14px"><input type="checkbox" class="chk" ${toutCoche?'checked':''} onchange="basculerFournisseurEdit(${gi}, this.checked)" style="vertical-align:middle"> 🧾 ${g.fournisseur}</h4><table><tr><th style="width:30px">✅</th><th>Produit</th><th>Fournisseur</th><th>Qté à Acheter</th><th>Total</th><th>Action</th></tr>`;
+    g.produits.forEach((p, pi)=>{
+      let cr = calculReel(p);
+      let actif = estActif(p);
+      html += `<tr id="ligne-${gi}-${pi}" class="${actif ? '' : 'ligne-desactivee'}">
+        <td><input type="checkbox" class="chk" id="chk-${gi}-${pi}" ${actif?'checked':''} onchange="basculerProduitEdit(${gi},${pi}, this.checked)"></td>
+        <td><b>${p.produit_nom}</b><br><small style="color:#9aa3b2">Stock ${p.stock_actuel ?? ''} ${cr.uniteVente} ${cr.cont>1 ? `• 1 ${cr.uniteAchat} = ${cr.cont} ${cr.uniteVente}`:''}</small></td>
+        <td><input id="four-${gi}-${pi}" value="${g.fournisseur}" onchange="changerFournisseur(${gi},${pi},this.value)" ${actif ? '' : 'disabled'}></td>
+        <td><input type="number" id="qte-${gi}-${pi}" value="${cr.qteAchat}" min="0" oninput="recalculerLigne(${gi},${pi})" ${actif ? '' : 'disabled'}> <small>${cr.uniteAchat}</small><br><small id="equiv-${gi}-${pi}" style="color:#22c55e">${actif ? '= '+cr.besoinVente+' '+cr.uniteVente : '0'}</small></td>
+        <td><b id="total-${gi}-${pi}">${fmtCmd(cr.totalReel)} FC</b></td>
+        <td><button class="btn-red" onclick="supprimerLigneDefinitive(${gi},${pi})">🗑️ Supprimer définitif</button></td>
+      </tr>`;
+    });
+    html += `</table>`;
+  });
+  html += `<div id="total-edit" style="background:#facc15;color:#000;padding:12px;border-radius:10px;text-align:center;margin-top:14px;font-weight:900;font-size:16px"></div><div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="btn-green" onclick="sauvegarderCorrection()">💾 SAUVEGARDER LA CORRECTION</button><button class="btn-dark" onclick="voir('${c.id}')">Annuler</button></div></div>`;
+  document.getElementById('detail').innerHTML = html;
+  recalculerTotalEdit();
+  window.scrollTo({top: document.getElementById('detail').offsetTop, behavior:'smooth'});
+}
+function basculerProduitEdit(gi, pi, checked){
+  let p = commandeEnCoursEdit.groupes[gi].produits[pi];
+  p.selected = !!checked; p.actif = !!checked; p.desactive = !checked;
+  let ligne=document.getElementById(`ligne-${gi}-${pi}`); let inputQte=document.getElementById(`qte-${gi}-${pi}`); let inputFour=document.getElementById(`four-${gi}-${pi}`); let equiv=document.getElementById(`equiv-${gi}-${pi}`); let totalEl=document.getElementById(`total-${gi}-${pi}`);
+  let actif=estActif(p); let cr=calculReel(p);
+  if(actif){ ligne.classList.remove('ligne-desactivee'); inputQte.disabled=false; inputFour.disabled=false; equiv.textContent=`= ${cr.besoinVente} ${cr.uniteVente}`; totalEl.textContent=fmtCmd(cr.totalReel)+' FC'; }
+  else { ligne.classList.add('ligne-desactivee'); inputQte.disabled=true; inputFour.disabled=true; equiv.textContent='0'; totalEl.textContent='0 FC'; }
+  recalculerTotalEdit();
+}
+function basculerFournisseurEdit(gi, checked){
+  commandeEnCoursEdit.groupes[gi].produits.forEach(p=>{ p.selected=!!checked; p.actif=!!checked; p.desactive=!checked; });
+  renderEditFromMemory();
+}
+function recalculerLigne(gi, pi){
+  let p=commandeEnCoursEdit.groupes[gi].produits[pi]; if(!estActif(p)) return;
+  let cr=calculReel(p); let nouvelleQte=+document.getElementById(`qte-${gi}-${pi}`).value||0; let nouveauBesoin=nouvelleQte*cr.cont;
+  p.quantite_commande=nouvelleQte; p.quantite_boites=nouvelleQte; p.quantite=nouvelleQte; p.a_commander=nouvelleQte; p.besoin_vente=nouveauBesoin; p._qteModifiee=true; p.total_ligne=nouvelleQte*cr.prixVente;
+  document.getElementById(`equiv-${gi}-${pi}`).textContent=`= ${nouveauBesoin} ${cr.uniteVente}`;
+  document.getElementById(`total-${gi}-${pi}`).textContent=fmtCmd(p.total_ligne)+' FC';
+  recalculerTotalEdit();
+}
+function changerFournisseur(gi, pi, nouveauFour){
+  let nouveau = (nouveauFour||'').trim();
+  if(!nouveau) return;
+  let p = commandeEnCoursEdit.groupes[gi].produits[pi];
+  let ancienGroupe = commandeEnCoursEdit.groupes[gi];
+  if(nouveau === ancienGroupe.fournisseur){ p.fournisseur = nouveau; return; }
+  ancienGroupe.produits.splice(pi,1);
+  p.fournisseur = nouveau;
+  let cible = commandeEnCoursEdit.groupes.find(g=>g.fournisseur===nouveau);
+  if(!cible){ cible = { fournisseur: nouveau, produits: [], total: 0 }; commandeEnCoursEdit.groupes.push(cible); }
+  cible.produits.push(p);
+  commandeEnCoursEdit.groupes = commandeEnCoursEdit.groupes.filter(g=>g.produits.length>0);
+  renderEditFromMemory();
+}
+function supprimerLigneDefinitive(gi, pi){
+  if(!confirm('Supprimer définitivement ?')) return;
+  commandeEnCoursEdit.groupes[gi].produits.splice(pi,1);
+  commandeEnCoursEdit.groupes = commandeEnCoursEdit.groupes.filter(g=>g.produits.length>0);
+  renderEditFromMemory();
+}
+function recalculerTotalEdit(){
+  if(!commandeEnCoursEdit) return;
+  let total=0; commandeEnCoursEdit.groupes.forEach(g=>{ g.produits.forEach(p=>{ total+=calculReel(p).totalReel; }); });
+  let el=document.getElementById('total-edit'); if(el) el.textContent='NOUVEAU TOTAL = '+fmtCmd(total)+' FC'; return total;
+}
+async function sauvegarderCorrection(){
+  if(!commandeEnCoursEdit) return;
+  commandeEnCoursEdit.groupes.forEach(g=>{
+    g.produits.forEach(p=>{ let cr=calculReel(p); p.total_ligne=cr.totalReel; p.fournisseur=g.fournisseur; });
+    let t=0; g.produits.forEach(p=>{ t+=calculReel(p).totalReel; }); g.total=t;
+  });
+  commandeEnCoursEdit.groupes = commandeEnCoursEdit.groupes.filter(g=>g.produits.length>0);
+  let site = getSiteDeCommande(commandeEnCoursEdit);
+  let tries = trierGroupesAvecIndex(commandeEnCoursEdit.groupes, site);
+  commandeEnCoursEdit.groupes = tries.map(x=>x.g);
+  commandeEnCoursEdit.total = recalculerTotalEdit();
+  commandeEnCoursEdit.modifiee = true;
+  commandeEnCoursEdit.date_modif = new Date().toLocaleString('fr-FR');
+  let ok = await sauvegarderCommandeExistante(commandeEnCoursEdit);
+  if(ok){ alert('✅ Corrigé !'); document.getElementById('detail').innerHTML=''; afficherListe(); voir(commandeEnCoursEdit.id); } else { alert('⚠️ Sauvegarde impossible'); }
+}
+function imprimerUne(id){
+  let c = getCommandeParId(id); if(!c) return;
+  let site = getSiteDeCommande(c);
+  let groupesTries = trierGroupesAvecIndex(c.groupes||[], site);
+  let html = `<h2>DUBENZEN</h2><div class="entete">COMMANDE FOURNISSEUR<br>${c.titre}<br>${c.date} • 📍 ${site}${c.modifiee ? '<br>✏️ Modifiée le '+c.date_modif : ''}</div>`;
+  let totalGeneralReel = 0;
+  groupesTries.forEach(({g})=>{
+    let produitsActifs = g.produits.filter(estActif);
+    if(!produitsActifs.length) return;
+    let totalGroupeReel = 0;
+    produitsActifs.forEach(p=>{ totalGroupeReel += calculReel(p).totalReel; });
+    totalGeneralReel += totalGroupeReel;
+    html += `<div class="fournisseur">FOURNISSEUR : ${g.fournisseur}</div>
+    <table><tr><th>PRODUIT</th><th style="text-align:center">QTÉ</th><th style="text-align:right">TOTAL</th></tr>`;
+    produitsActifs.forEach(p=>{
+      let cr = calculReel(p);
+      html += `<tr><td>${p.produit_nom}</td><td class="q">${cr.qteAchat} ${cr.uniteAchat}</td><td class="t">${fmtCmd(cr.totalReel)}</td></tr>`;
+    });
+    html += `</table><div class="total-f">Total ${g.fournisseur} : ${fmtCmd(totalGroupeReel)} FC</div>`;
+  });
+  html += `<div class="total-g">TOTAL GÉNÉRAL : ${fmtCmd(totalGeneralReel)} FC</div><div class="pied">Merci !<br>Signature : ....................</div>`;
+  document.getElementById('printZone').innerHTML = html;
+  setTimeout(()=>window.print(), 200);
+}
+async function suppr(id){
+  if(!confirm('Supprimer cette commande de l’historique ?')) return;
+  await supprimerCommande(id);
+  document.getElementById('detail').innerHTML='';
+  afficherListe();
+}
+async function demarrerHistorique(){
+  await dbInit();
+  await dbMigrerAncien();
+  await chargerCommandesCache();
+  afficherListe();
+}
+demarrerHistorique();
+</script>
+</body>
+</html>

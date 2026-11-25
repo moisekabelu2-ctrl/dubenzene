@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Central - OFFLINE</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0f1115;color:#fff;font-family:Inter,system-ui,sans-serif;padding:24px}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px}
+.h-title{font-size:20px;font-weight:900;display:flex;align-items:center;gap:8px}
+.badge-live{background:#facc15;color:#000;font-size:10px;padding:2px 8px;border-radius:999px;font-weight:900}
+.sub{font-size:11px;color:#6a7085;margin-top:4px;letter-spacing:0.5px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+@media(max-width:1000px){.grid4{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.grid4{grid-template-columns:1fr}}
+.card{background:#171a23;border:1px solid #222735;border-radius:16px;padding:20px}
+.card-label{font-size:10px;color:#5a6080;text-transform:uppercase;font-weight:700;letter-spacing:1px}
+.card-value{font-size:24px;font-weight:900;margin-top:8px}
+.card-trend{font-size:11px;margin-top:4px}
+.green{color:#22c55e}.red{color:#ef4444}.gray{color:#6a7085}
+.grid12{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+.col8{grid-column:span 8}.col4{grid-column:span 4}.col6{grid-column:span 6}
+@media(max-width:1100px){.col8,.col4,.col6{grid-column:span 12}}
+.pareto-title{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;gap:8px}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.bar-row{display:flex;align-items:center;gap:16px;margin-top:16px}
+.bar-label{font-size:12px;width:48px}
+.bar-bg{flex:1;height:8px;background:#1f2438;border-radius:999px;overflow:hidden}
+.bar-fill{height:100%;border-radius:999px}
+.bar-value{font-size:12px;font-weight:700;width:90px;text-align:right}
+.insight{margin-top:24px;background:rgba(250,204,21,0.1);border:1px solid rgba(250,204,21,0.2);border-radius:12px;padding:12px;display:flex;gap:8px}
+.insight p{font-size:11px;color:#facc15;line-height:1.4}
+.donut-wrap{display:flex;justify-content:center;margin-top:24px}
+.donut{width:112px;height:112px;border-radius:50%;background:conic-gradient(#facc15 0% 65%, #3f455c 65% 86%, #1f2438 86% 100%)}
+.legend{margin-top:24px;display:flex;flex-direction:column;gap:8px;font-size:12px}
+.legend-row{display:flex;justify-content:space-between;align-items:center}
+.product-row{display:flex;justify-content:space-between;padding:8px;background:transparent;border-radius:8px;margin-top:12px;font-size:12px}
+.product-row.active{background:#1c2135}
+.pill{background:#facc15;color:#000;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700}
+.alert{padding:12px;border-radius:12px;margin-top:12px}
+.alert-red{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2)}
+.alert-yellow{background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.2)}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1 class="h-title">Dashboard Central <span class="badge-live">• LIVE</span></h1>
+    <p class="sub">BUKAVU • 12 SITES • PARETO 80/20 ACTIVE • <span id="conn" style="color:#a3e635">● OFFLINE READY</span></p>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <div style="width:32px;height:32px;background:#1c2135;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800" id="avatar">B</div>
+    <span style="font-size:12px;color:#9aa0b5" id="userName">Boss Bukavu</span>
+  </div>
+</div>
+
+<div class="grid4">
+  <div class="card">
+    <p class="card-label">Stock Total</p>
+    <p class="card-value" id="stockTotal">12,540 L</p>
+    <p class="card-trend green">▲ +4.2% ce mois</p>
+  </div>
+  <div class="card">
+    <p class="card-label">Ventes du Jour</p>
+    <p class="card-value" id="ventesJour">$1,240</p>
+    <p class="card-trend green">▲ 12% vs hier</p>
+  </div>
+  <div class="card">
+    <p class="card-label">Sites Actifs</p>
+    <p class="card-value">8 / 12</p>
+    <p class="card-trend red">● 4 en rupture</p>
+  </div>
+  <div class="card">
+    <p class="card-label">Marge Jour</p>
+    <p class="card-value green" id="margeJour">$420</p>
+    <p class="card-trend gray">34% marge moyenne</p>
+  </div>
+</div>
+
+<div class="grid12">
+  <div class="col8 card">
+    <h3 class="pareto-title"><span class="dot" style="background:#facc15"></span> LOI DE PARETO - 80% DU CA VIENT DE 20% DES SITES</h3>
+    <p style="font-size:10px;color:#5a6080;margin-top:4px">Concentrez-vous sur Kadutu + Bagira</p>
+    <div class="bar-row"><span class="bar-label">Kadutu</span><div class="bar-bg"><div class="bar-fill" style="width:62%;background:#facc15"></div></div><span class="bar-value">$850 • 42%</span></div>
+    <div class="bar-row"><span class="bar-label">Bagira</span><div class="bar-bg"><div class="bar-fill" style="width:48%;background:#fff"></div></div><span class="bar-value">$620 • 31%</span></div>
+    <div class="bar-row"><span class="bar-label">Ibanda</span><div class="bar-bg"><div class="bar-fill" style="width:22%;background:#2a304a"></div></div><span class="bar-value" style="color:#6a7085">$210 • 14%</span></div>
+    <div class="bar-row"><span class="bar-label">Essence</span><div class="bar-bg"><div class="bar-fill" style="width:12%;background:#2a304a"></div></div><span class="bar-value" style="color:#6a7085">$80 • 6%</span></div>
+    <div class="insight"><span>💡</span><p>INSIGHT PARETO: Kadutu + Bagira = 73% du CA. Si tu sécurises 2 sites seulement, tu sécurises 73% du business.</p></div>
+  </div>
+
+  <div class="col4 card">
+    <h3 class="pareto-title"><span class="dot" style="background:#fb923c"></span> RÉPARTITION STOCK - DIAGRAMME</h3>
+    <div class="donut-wrap"><div class="donut"></div></div>
+    <div class="legend">
+      <div class="legend-row"><span style="display:flex;align-items:center;gap:8px"><span class="dot" style="background:#facc15"></span> Jaune</span><span style="font-weight:700">69% • 8,657 L</span></div>
+      <div class="legend-row"><span style="display:flex;align-items:center;gap:8px"><span class="dot" style="background:#3f455c"></span> Blanc</span><span>21% • 2,632 L</span></div>
+      <div class="legend-row" style="color:#6a7085"><span>Autres</span><span>10%</span></div>
+    </div>
+  </div>
+
+  <div class="col6 card">
+    <h3 class="pareto-title">🔥 TOP PRODUITS - LOI 80/20</h3>
+    <div class="product-row active"><span>Essence Jaune</span><span>1,240 L</span><span class="pill">42%</span></div>
+    <div class="product-row"><span>Essence Blanc</span><span>420 L</span><span>21%</span></div>
+    <div class="product-row"><span style="color:#6a7085">Kérosène</span><span>180 L</span><span style="color:#6a7085">6%</span></div>
+  </div>
+
+  <div class="col6 card">
+    <h3 class="pareto-title" style="color:#f87171">🚨 ALERTES PARETO - À TRAITER</h3>
+    <div class="alert alert-red"><p style="font-weight:700;color:#f87171;font-size:12px">● RUPTURE IMMINENTE</p><p style="font-size:11px;color:#9aa0b5;margin-top:4px">Essence Jaune à Bagira - 2 jours restants</p></div>
+    <div class="alert alert-yellow"><p style="font-weight:700;color:#facc15;font-size:12px">● MARGE FAIBLE</p><p style="font-size:11px;color:#9aa0b5;margin-top:4px">Ibanda - Marge 12% seulement, 80/20 non respecté</p></div>
+  </div>
+</div>
+
+<script>
+// 100% OFFLINE DATA - lit depuis localStorage
+try{
+  const u=JSON.parse(localStorage.getItem('user')||'{}');
+  const name=u.username||u.name||'Boss Bukavu';
+  document.getElementById('userName').textContent=name;
+  document.getElementById('avatar').textContent=name.charAt(0).toUpperCase();
+  
+  // Si tu stockes tes ventes en local, elles s'affichent ici
+  const stock=localStorage.getItem('stockTotal');
+  const ventes=localStorage.getItem('ventesJour');
+  const marge=localStorage.getItem('margeJour');
+  if(stock) document.getElementById('stockTotal').textContent=stock;
+  if(ventes) document.getElementById('ventesJour').textContent=ventes;
+  if(marge) document.getElementById('margeJour').textContent=marge;
+
+  if(!navigator.onLine){
+    document.getElementById('conn').textContent='● MODE OFFLINE';
+    document.getElementById('conn').style.color='#facc15';
+  }
+}catch(e){}
+</script>
+</body>
+</html>

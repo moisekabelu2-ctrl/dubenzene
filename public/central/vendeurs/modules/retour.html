@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>DUBENZENE - RETOUR</title></head>
+<body style="margin:0;padding:8px;font-family:Arial;background:#05070a;color:white;font-size:12px">
+<style>*{box-sizing:border-box}.card{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:9px}.input{width:100%;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.12);border-radius:9px;padding:8px 10px;color:white;outline:none;font-size:12px}.vente-row{border:1px solid rgba(255,255,255,0.1);border-radius:9px;padding:8px;margin-bottom:5px}.vente-row.selected{border-color:#facc15;background:rgba(250,204,21,0.08)}.vente-nom{font-size:11.5px;font-weight:800;text-transform:uppercase;word-break:break-word;line-height:1.25}.btn{width:100%;padding:10px;border-radius:10px;font-weight:900;border:none;cursor:pointer;font-size:12px}.btn-demande{background:#facc15;color:#000}.btn-demande:disabled{background:#333;color:#666}.qte-box{display:flex;align-items:center;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:9px;height:36px}.qte-box input{flex:1;background:transparent;border:none;color:white;text-align:center;font-weight:900;font-size:15px;outline:none}.qte-btn{width:36px;height:36px;background:rgba(255,255,255,0.08);border:none;color:#fff;font-size:17px;font-weight:900}.qte-btn:disabled{background:#1a1a1a;color:#555}.badge{background:#ef4444;color:white;border-radius:999px;padding:1px 6px;font-size:10px;font-weight:900;min-width:18px;text-align:center;display:inline-block}.badge.vert{background:#22c55e}.motif-chip{padding:6px 9px;border-radius:999px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;font-weight:800;font-size:11px;cursor:pointer}.motif-chip.active{background:#facc15;color:#000;border-color:#facc15}.check-line{display:flex;gap:7px;align-items:flex-start;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:9px;padding:7px;margin-top:7px;font-size:11px;line-height:1.3}.check-line input{width:16px;height:16px;accent-color:#facc15;flex-shrink:0;margin-top:1px}.erreur{color:#f87171;font-size:11px;margin-top:4px;display:none}.prod-btn{width:100%;text-align:left;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:9px;padding:7px 8px;margin-bottom:5px;cursor:pointer;color:#fff;display:flex;justify-content:space-between;gap:6px;align-items:center}.prod-btn.selected{border-color:#facc15;background:rgba(250,204,21,0.12);border-width:1.5px}.prod-btn b{font-size:11.5px;text-transform:uppercase;line-height:1.25;word-break:break-word}.mode-btn{flex:1;padding:8px;border-radius:9px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;font-weight:900;font-size:11px;cursor:pointer;line-height:1.3}.mode-btn.active{background:#facc15;color:#000;border-color:#facc15}.prod-ligne{width:100%;text-align:left;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:6px 8px;margin-top:4px;cursor:pointer;color:#fff;display:flex;justify-content:space-between;gap:6px;align-items:center}</style>
+
+<div style="display:flex;justify-content:space-between;margin-bottom:8px;align-items:center"><div><h1 style="font-size:15px;margin:0">DUBENZENE <span style="color:#22c55e" id="siteName">VICTOIRE</span></h1></div><div id="heure" style="font-size:11px;color:#94a3b8"></div></div>
+<div style="background:rgba(250,204,21,0.1);border:1px solid rgba(250,204,21,0.3);border-radius:9px;padding:7px 9px;font-size:11.5px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center"><span>↩️ <b>Retours</b></span><span><span id="badgeEnAttente" class="badge">0</span> en attente • <span id="badgeValide" class="badge vert">0</span> validés</span></div>
+
+<div class="card"><input id="search" class="input" placeholder="🔍 Produit..."><div id="zoneResultat" style="display:none"><div id="listVentes" style="margin-top:6px"></div><div id="pagination" style="display:flex;gap:5px;flex-wrap:wrap;justify-content:center;margin-top:8px"></div></div><div id="zoneVide" style="text-align:center;color:#64748b;padding:10px 4px 2px;font-size:11px">Tape le produit</div></div>
+
+<div class="card" id="formRetour" style="margin-top:8px;display:none">
+<div id="detailVente" style="margin-top:2px"></div>
+<div style="background:rgba(250,204,21,0.08);border:1px solid rgba(250,204,21,0.3);border-radius:9px;padding:8px;margin-top:8px">
+  <div style="font-size:11px;font-weight:900;color:#facc15"><span id="nomProduitClique" style="color:#fff"></span></div>
+  <div style="display:flex;gap:6px;margin-top:7px">
+    <button type="button" class="mode-btn active" id="btnModeUn" onclick="setMode('un')">📦 <span id="labelModeUn">Ce produit</span></button>
+    <button type="button" class="mode-btn" id="btnModeTout" onclick="setMode('tout')">🧾 Toute la facture</button>
+  </div>
+</div>
+
+<div id="blocFactureComplete" style="display:none;margin-top:8px;background:#FFFBEB;border:1.5px solid #FACC15;border-radius:9px;padding:8px;color:#000">
+  <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:11.5px">🧾 Facture complète</b><span id="badgeFacture" style="background:#000;color:#FACC15;border-radius:999px;padding:2px 7px;font-size:10px;font-weight:900"></span></div>
+  <div id="listeFactureComplete" style="margin-top:6px"></div>
+  <div style="display:flex;justify-content:space-between;border-top:1.5px solid #000;padding-top:6px;margin-top:6px;font-weight:900;font-size:12px"><span>Total</span><span id="totalFactureValeur"></span></div>
+</div>
+
+<div id="listeProduitsRetour" style="margin-top:6px"></div>
+<div id="blocQte">
+<div style="font-size:11px;color:#94a3b8;margin-top:6px" id="aideQte"></div>
+<div class="qte-box" style="margin-top:4px"><button class="qte-btn" id="btnMoins" type="button" onclick="chgQte(-1)">−</button><input id="qteRetour" type="text" inputmode="numeric" value="1"><button class="qte-btn" id="btnPlus" type="button" onclick="chgQte(1)">+</button></div>
+<div id="qteErreur" style="color:#f87171;font-size:11px;font-weight:800;margin-top:4px;display:none">⛔ Max dépassé</div>
+</div>
+<div id="infoRetour" style="font-size:11.5px;margin-top:7px;background:rgba(250,204,21,0.08);border:1px solid rgba(250,204,21,0.3);border-radius:9px;padding:7px 8px;line-height:1.5"></div>
+<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px">
+  <button type="button" class="motif-chip" data-motif="Produit défectueux / Cassé" onclick="choisirMotif(this)">💔 Cassé</button>
+  <button type="button" class="motif-chip" data-motif="Mauvais produit vendu / Erreur de vente" onclick="choisirMotif(this)">❌ Mauvais produit</button>
+  <button type="button" class="motif-chip" data-motif="Client a changé d'avis" onclick="choisirMotif(this)">🔄 Changé d'avis</button>
+  <button type="button" class="motif-chip" data-motif="Produit périmé / Mauvais état" onclick="choisirMotif(this)">⏰ Périmé</button>
+  <button type="button" class="motif-chip" data-motif="Retour total de la facture" onclick="choisirMotif(this)">🧾 Toute la facture</button>
+</div>
+<label class="check-line"><input type="checkbox" id="checkUnique"><span><b>Je confirme :</b> <span id="texteCheck">Client présent, produit vérifié.</span></span></label>
+<div id="checkErreur" class="erreur">❌ Coche pour continuer.</div>
+<input id="motConfirmation" class="input" placeholder="Écris RETOUR" style="margin-top:6px;text-transform:uppercase">
+<div id="motErreur" class="erreur">❌ Écris RETOUR</div>
+<input id="raisonDetail" class="input" placeholder="Précision..." style="margin-top:6px">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:9px"><button class="btn" style="background:rgba(255,255,255,0.08);color:white" onclick="annulerSelection()">ANNULER</button><button class="btn btn-demande" id="btnValider" onclick="envoyerDemande()">📩 ENVOYER</button></div>
+<div id="msgOk" style="background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.4);border-radius:9px;padding:7px;font-size:11px;margin-top:7px;display:none">✅ Envoyé !</div></div>
+
+<div class="card" style="margin-top:8px"><h3 style="font-size:11px;margin:0 0 5px">⏳ En attente</h3><div id="listEnAttente"></div></div>
+<div class="card" style="margin-top:8px"><h3 style="font-size:11px;margin:0 0 5px">📜 Historique</h3><div id="listHistorique"></div></div>
+
+<script>
+function fmtFC(n){return Number(n||0).toLocaleString('fr-FR',{minimumFractionDigits:2})+' FC'}
+function getCurrentSiteId(){try{let u=JSON.parse(localStorage.getItem('user')||'{}');if(u.siteId)return u.siteId;let uid=localStorage.getItem('dub_current_user_id');let users=JSON.parse(localStorage.getItem('dub_users')||'[]');let me=users.find(x=>String(x.id)===String(uid));if(me&&me.siteId)return me.siteId;if(me&&me.siteName){let sites=JSON.parse(localStorage.getItem('dub_sites')||'[]');let s=sites.find(x=>x.nom===me.siteName);if(s)return s.id;}}catch(e){}return 'victoire'}
+function getMyId(){ return localStorage.getItem('dub_current_user_id')||'vendeur'; }
+function estAujourdhui(iso){ if(!iso) return false; let d=new Date(iso); let n=new Date(); return d.getFullYear()===n.getFullYear() && d.getMonth()===n.getMonth() && d.getDate()===n.getDate(); }
+let SITE_ID=getCurrentSiteId();let PAGE_SIZE=20;let CURRENT_PAGE=1;let VENTES_ALL=[];let SELECTED=null;let MOTIF_CHOISI='';let PRODUIT_INDEX=0;let MODE='un';
+function groupVentes(list){let map={};list.forEach(v=>{let d=(v.date||'').slice(0,16);let key=d+'|'+(v.client||'Client')+'|'+(v.phone||'');if(!map[key])map[key]={key:key,date:v.date,client:v.client||'Client',phone:v.phone||'',siteId:v.siteId||'',items:[],totalFC:0,totalQte:0};let pv=+v.pv||0;let q=+v.qte||+v.quantite||0;let total=+v.valeurPV||+v.total_vente||+v.total||(pv*q);map[key].items.push(v);map[key].totalFC+=total;map[key].totalQte+=q;});return Object.values(map).sort((a,b)=>new Date(b.date)-new Date(a.date))}
+function getVentes(){let all=[];try{all=JSON.parse(localStorage.getItem('dub_ventes')||'[]')}catch(e){}let mine=all.filter(v=>String(v.siteId||v.site||'').toLowerCase()===String(SITE_ID).toLowerCase());return groupVentes(mine)}
+function getDemandesAll(){try{return JSON.parse(localStorage.getItem('dub_retours_demandes')||'[]')}catch(e){return []}}
+function dejaRetourne(venteKey, produit){let total=0;getDemandesAll().forEach(r=>{if(r.venteKey===venteKey && r.produit===produit && (r.statut==='en_attente' || r.statut==='valide')){total += +r.qte||0;}});return total;}
+function getMaxRetournable(it){if(!SELECTED || !it) return {vendu:0,deja:0,max:0};let vendu=+(it.qte||it.quantite||0);let deja=dejaRetourne(SELECTED.key, it.produit);let max=vendu-deja;if(max<0)max=0;return {vendu:vendu,deja:deja,max:max};}
+function getMaxRetournableForGroup(g, it){let vendu=+(it.qte||it.quantite||0);let deja=0;getDemandesAll().forEach(r=>{if(r.venteKey===g.key && r.produit===it.produit && (r.statut==='en_attente'||r.statut==='valide')) deja += +r.qte||0;});return {vendu:vendu,deja:deja,max:Math.max(0,vendu-deja)};}
+function afficherListeVentesSeule(){
+  let q=(document.getElementById('search').value||'').toLowerCase().trim();
+  if(q.length < 2){
+    document.getElementById('zoneResultat').style.display='none';
+    document.getElementById('zoneVide').style.display='block';
+    VENTES_ALL=[];
+    return;
+  }
+  document.getElementById('zoneResultat').style.display='block';
+  document.getElementById('zoneVide').style.display='none';
+  let all=getVentes();
+  let list=all.filter(g=>g.client.toLowerCase().includes(q)||g.items.some(it=>(it.produit||'').toLowerCase().includes(q)));
+  VENTES_ALL=list;
+  let totalPages=Math.max(1,Math.ceil(VENTES_ALL.length/PAGE_SIZE));if(CURRENT_PAGE>totalPages)CURRENT_PAGE=1;
+  let page=VENTES_ALL.slice((CURRENT_PAGE-1)*PAGE_SIZE,CURRENT_PAGE*PAGE_SIZE);
+  document.getElementById('siteName').innerText=String(SITE_ID).toUpperCase();
+  if(VENTES_ALL.length===0){
+    document.getElementById('listVentes').innerHTML='<div style="text-align:center;color:#f87171;padding:10px;font-size:11px">❌ Aucun produit vendu</div>';
+    document.getElementById('pagination').innerHTML='';
+    return;
+  }
+  document.getElementById('listVentes').innerHTML=page.map((g)=>{
+    let globalIdx = VENTES_ALL.indexOf(g);
+    let itemsFiltres = g.items.map((it,i)=>({it:it,i:i})).filter(x=>(x.it.produit||'').toLowerCase().includes(q) || g.client.toLowerCase().includes(q));
+    let itemsHtml = itemsFiltres.map(x=>{
+      let it=x.it; let i=x.i;
+      let info=getMaxRetournableForGroup(g, it);
+      return '<button type="button" class="prod-ligne" style="border-color:#facc15;background:rgba(250,204,21,0.1);" onclick="event.stopPropagation(); cliquerProduit('+globalIdx+','+i+')"><span style="flex:1"><span class="vente-nom">'+it.produit+'</span><br><small style="color:#94a3b8">Vendu : '+(it.qte||it.quantite)+(info.deja>0?' • Déjà : '+info.deja:'')+'</small></span><span style="white-space:nowrap;font-size:11px">'+(it.qte||it.quantite)+' x '+fmtFC(it.pv)+'</span></button>';
+    }).join('');
+    return '<div class="vente-row"><div style="display:flex;justify-content:space-between"><b style="font-size:12px">'+g.client+'</b><b style="color:#22c55e;font-size:12px">'+fmtFC(g.totalFC)+'</b></div><div style="font-size:10px;color:#94a3b8">'+new Date(g.date).toLocaleString('fr-FR')+' • '+g.totalQte+' art</div>'+itemsHtml+'</div>'
+  }).join('');
+  document.getElementById('pagination').innerHTML=totalPages<=1?'':'<button onclick="goPage('+(CURRENT_PAGE-1)+')" '+(CURRENT_PAGE===1?'disabled':'')+' style="padding:6px 10px;border-radius:8px;background:#222;color:#fff;border:1px solid #333;font-size:11px">← Préc.</button><span style="align-self:center;font-size:11px">Page '+CURRENT_PAGE+' / '+totalPages+'</span><button onclick="goPage('+(CURRENT_PAGE+1)+')" '+(CURRENT_PAGE===totalPages?'disabled':'')+' style="padding:6px 10px;border-radius:8px;background:#222;color:#fff;border:1px solid #333;font-size:11px">Suiv. →</button>';
+}
+function afficher(){ afficherListeVentesSeule(); afficherDemandes(); }
+function goPage(p){CURRENT_PAGE=p;afficherListeVentesSeule()}
+function cliquerProduit(venteIdx, produitIdx){
+  SELECTED = VENTES_ALL[venteIdx];
+  if(!SELECTED) return;
+  PRODUIT_INDEX = produitIdx; MODE='un'; MOTIF_CHOISI='';
+  document.querySelectorAll('.motif-chip').forEach(b=>b.classList.remove('active'));
+  document.getElementById('btnModeUn').classList.add('active'); document.getElementById('btnModeTout').classList.remove('active');
+  ouvrirFormulaire();
+  let it = SELECTED.items[PRODUIT_INDEX];
+  let m = getMaxRetournable(it);
+  document.getElementById('nomProduitClique').innerText = it.produit + ' — Vendu : ' + m.vendu + (m.deja>0 ? ' • Déjà : '+m.deja : '');
+  document.getElementById('labelModeUn').innerText = it.produit;
+}
+function ouvrirFormulaire(){
+  document.getElementById('formRetour').style.display='block';
+  document.getElementById('detailVente').innerHTML='<div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:7px;font-size:11px"><b>'+SELECTED.client+'</b> • '+new Date(SELECTED.date).toLocaleDateString('fr-FR')+' à '+new Date(SELECTED.date).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})+'<br>Total : <b style="color:#22c55e">'+fmtFC(SELECTED.totalFC)+'</b> • '+SELECTED.totalQte+' art</div>';
+  afficherProduitsRetour();
+  afficherFactureComplete();
+  document.getElementById('qteRetour').value=1;
+  document.getElementById('raisonDetail').value='';
+  document.getElementById('motConfirmation').value='';
+  document.getElementById('checkUnique').checked=false;
+  document.getElementById('msgOk').style.display='none';
+  document.getElementById('checkErreur').style.display='none';
+  document.getElementById('motErreur').style.display='none';
+  document.getElementById('qteErreur').style.display='none';
+  updateInfo();
+  document.getElementById('formRetour').scrollIntoView({behavior:'smooth'});
+}
+function afficherFactureComplete(){
+  let bloc = document.getElementById('blocFactureComplete');
+  if(!SELECTED || MODE!=='tout'){ bloc.style.display='none'; return; }
+  bloc.style.display='block';
+  let totalRestant = 0;
+  let lignes = SELECTED.items.map((it)=>{
+    let m = getMaxRetournable(it);
+    totalRestant += m.max * (+it.pv||0);
+    return '<div style="display:flex;justify-content:space-between;gap:6px;padding:4px 0;border-bottom:1px dashed #E5E7EB;font-size:11.5px"><span style="flex:1"><b>✅ '+it.produit+'</b><br><small style="color:#6B7280">Vendu : '+(it.qte||it.quantite)+' • À retourner : '+m.max+'</small></span><b style="white-space:nowrap">'+fmtFC(m.max*(+it.pv||0))+'</b></div>';
+  }).join('');
+  document.getElementById('listeFactureComplete').innerHTML = lignes;
+  document.getElementById('badgeFacture').innerText = SELECTED.items.length + ' article(s)';
+  document.getElementById('totalFactureValeur').innerText = fmtFC(totalRestant);
+}
+function setMode(m){
+  MODE=m;
+  document.getElementById('btnModeUn').classList.toggle('active', m==='un');
+  document.getElementById('btnModeTout').classList.toggle('active', m==='tout');
+  document.getElementById('blocQte').style.display = m==='tout' ? 'none' : 'block';
+  document.getElementById('texteCheck').innerText = m==='tout' ? 'Client présent avec TOUS les produits, vérifiés.' : 'Client présent, produit vérifié.';
+  if(m==='tout' && !MOTIF_CHOISI){
+    document.querySelectorAll('.motif-chip').forEach(b=>{ if(b.getAttribute('data-motif')==='Retour total de la facture'){ b.classList.add('active'); MOTIF_CHOISI=b.getAttribute('data-motif'); } });
+  }
+  afficherProduitsRetour();
+  afficherFactureComplete();
+  updateInfo();
+  if(m==='tout'){ document.getElementById('blocFactureComplete').scrollIntoView({behavior:'smooth', block:'nearest'}); }
+}
+function afficherProduitsRetour(){
+  if(!SELECTED) return;
+  let box=document.getElementById('listeProduitsRetour');
+  if(MODE==='tout'){
+    box.innerHTML = '';
+  } else {
+    box.innerHTML = SELECTED.items.map((it,i)=>{
+      let sel = i===PRODUIT_INDEX ? 'selected' : '';
+      let m = getMaxRetournable(it);
+      return '<button type="button" class="prod-btn '+sel+'" onclick="choisirProduitRetour('+i+')"><span><b>'+(sel?'✅ ':'')+it.produit+'</b><br><small style="color:#94a3b8">Vendu : '+(it.qte||it.quantite)+(m.deja>0?' • Déjà : '+m.deja:'')+' • Max : '+m.max+'</small></span><span style="font-weight:900;color:#facc15;white-space:nowrap;font-size:11px">'+fmtFC((it.qte||it.quantite)*+it.pv)+'</span></button>';
+    }).join('');
+  }
+}
+function choisirProduitRetour(i){
+  if(MODE==='tout') return;
+  PRODUIT_INDEX=i;
+  document.getElementById('qteRetour').value=1;
+  document.getElementById('qteErreur').style.display='none';
+  let it = SELECTED.items[PRODUIT_INDEX];
+  let m = getMaxRetournable(it);
+  document.getElementById('nomProduitClique').innerText = it.produit + ' — Vendu : ' + m.vendu + (m.deja>0 ? ' • Déjà : '+m.deja : '');
+  document.getElementById('labelModeUn').innerText = it.produit;
+  afficherProduitsRetour();
+  updateInfo();
+}
+function annulerSelection(){SELECTED=null;document.getElementById('formRetour').style.display='none';afficherListeVentesSeule()}
+function chgQte(d){
+  if(MODE==='tout') return;
+  let it = SELECTED.items[PRODUIT_INDEX];
+  let m = getMaxRetournable(it);
+  let el=document.getElementById('qteRetour');
+  let v=parseInt(el.value||'1',10)+d;
+  if(v<1) v=1;
+  if(v>m.max){ v=m.max; document.getElementById('qteErreur').style.display='block'; setTimeout(()=>{document.getElementById('qteErreur').style.display='none'},2000); }
+  if(m.max===0){ v=0; }
+  el.value=v; updateInfo();
+}
+function updateInfo(){
+  if(!SELECTED) return;
+  if(MODE==='tout'){
+    let totalRestant = 0; let totalVendu = 0;
+    SELECTED.items.forEach(it=>{ let m=getMaxRetournable(it); totalRestant += m.max*+it.pv; totalVendu += +(it.qte||it.quantite||0); });
+    document.getElementById('infoRetour').innerHTML='🧾 <b style="color:white">RETOUR TOTAL</b><br>À rembourser : <b style="color:#facc15">'+fmtFC(totalRestant)+'</b> • Vendu : '+totalVendu+' art';
+    document.getElementById('btnValider').disabled=false;
+    return;
+  }
+  let it=SELECTED.items[PRODUIT_INDEX]; if(!it) return;
+  let m = getMaxRetournable(it);
+  if(m.max===0){
+    document.getElementById('aideQte').innerText = '⛔ Déjà tout retourné. Vendu : '+m.vendu+' • Déjà : '+m.deja;
+    document.getElementById('infoRetour').innerHTML='⛔ <b style="color:#fca5a5">Plus rien à retourner.</b>';
+    document.getElementById('btnValider').disabled=true;
+    document.getElementById('btnPlus').disabled=true;
+    document.getElementById('btnMoins').disabled=true;
+    document.getElementById('qteRetour').value=0;
+    return;
+  }
+  let q=parseInt(document.getElementById('qteRetour').value||'1',10)||1;
+  if(q>m.max){ q=m.max; document.getElementById('qteRetour').value=q; document.getElementById('qteErreur').style.display='block'; }
+  else { document.getElementById('qteErreur').style.display='none'; }
+  if(q<1){ q=1; document.getElementById('qteRetour').value=q; }
+  let resteApres = m.max - q;
+  document.getElementById('btnPlus').disabled = q>=m.max;
+  document.getElementById('btnMoins').disabled = q<=1;
+  document.getElementById('aideQte').innerText = 'Vendu : '+m.vendu+' • Déjà : '+m.deja+' • Max : '+m.max;
+  document.getElementById('infoRetour').innerHTML='Tu retournes : <b style="color:white">'+q+' x '+it.produit+'</b> • À rembourser : <b style="color:#facc15">'+fmtFC(q*+it.pv)+'</b><br>Restera : <b style="color:#22c55e">'+resteApres+' x '+it.produit+'</b>';
+  document.getElementById('btnValider').disabled=false;
+}
+function choisirMotif(btn){document.querySelectorAll('.motif-chip').forEach(b=>b.classList.remove('active'));btn.classList.add('active');MOTIF_CHOISI=btn.getAttribute('data-motif');}
+document.getElementById('qteRetour').addEventListener('input',function(){
+  let it = SELECTED ? SELECTED.items[PRODUIT_INDEX] : null;
+  if(!it) return;
+  let m = getMaxRetournable(it);
+  let v = parseInt(this.value||'1',10);
+  if(isNaN(v)) v=1;
+  if(v>m.max){ this.value=m.max; document.getElementById('qteErreur').style.display='block'; }
+  updateInfo();
+});
+function envoyerDemande(){
+  if(!SELECTED) return alert('Choisis une vente');
+  if(!MOTIF_CHOISI){ alert('⛔ Clique 1 motif'); return; }
+  if(!document.getElementById('checkUnique').checked){ document.getElementById('checkErreur').style.display='block'; alert('⛔ Coche.'); return; } else { document.getElementById('checkErreur').style.display='none'; }
+  let mot=document.getElementById('motConfirmation').value.trim().toUpperCase();
+  if(mot!=='RETOUR'){ document.getElementById('motErreur').style.display='block'; alert('⛔ Écris RETOUR'); document.getElementById('motConfirmation').focus(); return; } else { document.getElementById('motErreur').style.display='none'; }
+  let existantes=[]; try{existantes=JSON.parse(localStorage.getItem('dub_retours_demandes')||'[]')}catch(e){}
+  let raison=document.getElementById('raisonDetail').value.trim()||MOTIF_CHOISI;
+  let vendeurNom='';try{let users=JSON.parse(localStorage.getItem('dub_users')||'[]');let me=users.find(x=>String(x.id)===String(getMyId())); if(me) vendeurNom = me.nom||me.name||me.username||'';}catch(e){}
+  if(MODE==='tout'){
+    let deja = existantes.find(r=>r.statut==='en_attente' && r.venteKey===SELECTED.key && String(r.vendeur)===String(getMyId()));
+    if(deja){ alert('⛔ Déjà envoyé.'); return; }
+    let itemsRestants = SELECTED.items.map(it=>{ let m=getMaxRetournable(it); return {it:it, max:m.max}; }).filter(x=>x.max>0);
+    if(itemsRestants.length===0){ alert('⛔ Plus rien à retourner.'); return; }
+    let totalRestant = 0; itemsRestants.forEach(x=>{ totalRestant += x.max*+x.it.pv; });
+    let listeTexte = itemsRestants.map(x=> '• '+x.max+' x '+x.it.produit).join('\n');
+    if(!confirm('RETOUR TOTAL ?\n\n'+listeTexte+'\n\nTotal : '+fmtFC(totalRestant))) return;
+    let groupeId = Date.now()+Math.random();
+    let nouvelles = itemsRestants.map(x=>{
+      let it=x.it;
+      return {id:Date.now()+Math.random()+Math.random(),siteId:SITE_ID,produit:it.produit,qte:x.max,pv:+it.pv||0,pa:+it.pa||0,montant:x.max*(+it.pv||0),client:SELECTED.client,phone:SELECTED.phone||'',dateVente:SELECTED.date,dateDemande:new Date().toISOString(),motif:MOTIF_CHOISI,raison:raison,statut:'en_attente',vendeur:getMyId(),vendeurNom:vendeurNom,venteKey:SELECTED.key,retourTotal:true,groupeRetour:groupeId,totalFacture:totalRestant};
+    });
+    localStorage.setItem('dub_retours_demandes', JSON.stringify([...nouvelles.reverse(), ...existantes]));
+    document.getElementById('msgOk').style.display='block';
+    alert('📩 Envoyé. • '+fmtFC(totalRestant));
+    SELECTED=null;document.getElementById('formRetour').style.display='none';
+    document.getElementById('search').value='';
+    afficher();
+    return;
+  }
+  let it=SELECTED.items[PRODUIT_INDEX];
+  if(!it) return alert('Choisis le produit');
+  let m = getMaxRetournable(it);
+  let q=parseInt(document.getElementById('qteRetour').value||'1',10)||0;
+  if(q<=0) return alert('Quantité invalide');
+  if(q>m.max) return alert('⛔ Max : '+m.max);
+  let doublon = existantes.find(r=>r.statut==='en_attente' && r.venteKey===SELECTED.key && r.produit===it.produit && String(r.vendeur)===String(getMyId()));
+  if(doublon){ alert('⛔ Déjà envoyé.'); return; }
+  let resteApres = m.max - q;
+  if(!confirm(q+' x '+it.produit+'\n'+fmtFC(q*+it.pv)+'\nRestera : '+resteApres)) return;
+  let demandes=existantes;
+  demandes.unshift({id:Date.now()+Math.random(),siteId:SITE_ID,produit:it.produit,qte:q,pv:+it.pv||0,pa:+it.pa||0,montant:q*(+it.pv||0),client:SELECTED.client,phone:SELECTED.phone||'',dateVente:SELECTED.date,dateDemande:new Date().toISOString(),motif:MOTIF_CHOISI,raison:raison,statut:'en_attente',vendeur:getMyId(),vendeurNom:vendeurNom,venteKey:SELECTED.key,retourTotal:false});
+  localStorage.setItem('dub_retours_demandes',JSON.stringify(demandes));
+  document.getElementById('msgOk').style.display='block';
+  alert('📩 Envoyé.');
+  SELECTED=null;document.getElementById('formRetour').style.display='none';
+  document.getElementById('search').value='';
+  afficher();
+}
+function ligneRetour(r){
+  let c=r.statut==='valide'?'#22c55e':(r.statut==='refuse'?'#ef4444':'#facc15');
+  let label=r.statut==='valide'?'✅ VALIDÉE':(r.statut==='refuse'?'❌ REFUSÉE':'⏳ EN ATTENTE');
+  let tagTotal = r.retourTotal ? ' <b style="color:#facc15">🧾 FACTURE</b>' : '';
+  let dateVal=r.dateValidation?'<br><small style="color:#94a3b8">'+new Date(r.dateValidation).toLocaleString('fr-FR')+'</small>':'' ;
+  return '<div style="display:flex;justify-content:space-between;gap:6px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.06);font-size:11px"><span style="word-break:break-word;flex:1">↩️ '+r.qte+' x '+r.produit+tagTotal+'<br><small style="color:#94a3b8">'+new Date(r.dateDemande).toLocaleString('fr-FR')+' • '+r.motif+dateVal+'</small></span><span style="text-align:right"><b style="color:'+c+'">'+label+'</b><br><b style="color:#facc15">'+fmtFC(r.montant)+'</b></span></div>';
+}
+function afficherDemandes(){
+  let all=[];try{all=JSON.parse(localStorage.getItem('dub_retours_demandes')||'[]')}catch(e){}
+  let myId=getMyId();
+  let mine=all.filter(r=>String(r.siteId||'').toLowerCase()===String(SITE_ID).toLowerCase() && String(r.vendeur||'')===String(myId));
+  let enAttente=mine.filter(r=>r.statut==='en_attente');
+  let validesAujourdhui=mine.filter(r=>r.statut==='valide' && estAujourdhui(r.dateValidation));
+  let historique=mine.filter(r=>r.statut!=='en_attente');
+  document.getElementById('badgeEnAttente').innerText=enAttente.length;
+  document.getElementById('badgeValide').innerText=validesAujourdhui.length;
+  document.getElementById('listEnAttente').innerHTML=enAttente.length?enAttente.map(r=>ligneRetour(r)).join(''):'<div style="color:#64748b;font-size:11px">Aucune</div>';
+  document.getElementById('listHistorique').innerHTML=historique.length?historique.slice(0,100).map(r=>ligneRetour(r)).join(''):'<div style="color:#64748b;font-size:11px">Aucun</div>';
+}
+document.getElementById('search').addEventListener('input',function(){CURRENT_PAGE=1;afficherListeVentesSeule(); afficherDemandes();});
+afficher();
+setInterval(afficherDemandes,3000);
+setInterval(function(){document.getElementById('heure').innerText=new Date().toLocaleTimeString()},1000);
+</script></body></html>

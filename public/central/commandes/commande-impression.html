@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Impression - Bon de Commande DUBENZEN</title>
+<style>
+@media print{ .no-print{display:none} body{padding:0} .page{border:0;margin:0} }
+body{font-family:Arial;padding:20px;background:#f3f3f3}
+.page{page-break-after:always;border:1px solid #ddd;padding:20px;margin-bottom:20px;background:#fff}
+table{width:100%;border-collapse:collapse}
+td,th{padding:8px;border:1px solid #ddd;text-align:left}
+th{background:#0b0e14;color:#fff}
+.total{text-align:right;font-weight:bold;font-size:18px;margin-top:10px}
+.bar{margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap}
+button{padding:12px 18px;border:0;border-radius:8px;cursor:pointer;font-weight:800}
+</style>
+</head>
+<body>
+<div class="no-print bar">
+  <button onclick="window.print()" style="background:#0a7a42;color:#fff">🖨 IMPRIMER</button>
+  <button onclick="window.close()" style="background:#333;color:#fff">✖ Fermer</button>
+</div>
+<div id="pages"></div>
+<script>
+function fmt(n){ return (Number(n)||0).toLocaleString('fr-CD'); }
+// ===== ABRÉVIATIONS : BOITE -> BT, PLAQUETTE -> PL, etc =====
+function abrevUnite(u){
+  let s = String(u||'').toUpperCase().trim();
+  if(s==='PLAQUETTE' || s==='PLAQUETTES' || s==='PLQ' || s==='PLQS' || s==='PLAQ') return 'PL';
+  if(s==='BOITE' || s==='BOÎTE' || s==='BOITES' || s==='BOÎTES' || s==='BT' || s==='BTE') return 'BT';
+  if(s==='AMPOULE' || s==='AMPOULES' || s==='AMP') return 'AMP';
+  if(s==='FLACON' || s==='FLACONS' || s==='FL') return 'FL';
+  if(s==='BIDON' || s==='BIDONS') return 'BIDON';
+  if(s==='CARTON' || s==='CARTONS' || s==='CTN') return 'CTN';
+  if(s==='SACHET' || s==='SACHETS' || s==='SCH') return 'SCH';
+  if(s==='COMPRIME' || s==='COMPRIMES' || s==='CPR') return 'CPR';
+  if(s==='GELULE' || s==='GELULES' || s==='GEL') return 'GEL';
+  if(s==='TUBE' || s==='TUBES') return 'TUBE';
+  if(s==='LITRE' || s==='LITRES' || s==='L') return 'L';
+  if(s==='KG' || s==='KILOGRAMME') return 'KG';
+  if(s==='PAQUET' || s==='PAQUETS' || s==='PQT') return 'PQT';
+  return s;
+}
+function estActif(p){
+  if(!p) return false;
+  if(p.selected === false) return false;
+  if(p.actif === false) return false;
+  if(p.desactive === true) return false;
+  return true;
+}
+function nomFournisseur(g){
+  if(!g) return 'Sans Fournisseur';
+  if(typeof g.fournisseur === 'string') return g.fournisseur;
+  if(g.fournisseur && typeof g.fournisseur === 'object') return g.fournisseur.nom || g.fournisseur.name || 'Sans Fournisseur';
+  return g.nom || 'Sans Fournisseur';
+}
+function infoFournisseur(nom){
+  try{
+    let list = JSON.parse(localStorage.getItem('dub_fournisseurs')||'[]');
+    let f = (Array.isArray(list)?list:[]).find(x=>{
+      let n = typeof x==='string' ? x : (x.nom||x.name||'');
+      return String(n).toLowerCase() === String(nom).toLowerCase();
+    });
+    if(f && typeof f==='object') return f;
+  }catch(e){}
+  return {};
+}
+function getGroupes(){
+  let g1 = null;
+  try{ g1 = JSON.parse(localStorage.getItem('print_groupes')||'[]'); }catch(e){ g1=[]; }
+  if(Array.isArray(g1) && g1.length) return { groupes: g1, titre: localStorage.getItem('print_titre')||'BON DE COMMANDE', date: localStorage.getItem('print_date')||new Date().toLocaleDateString('fr-CD') };
+  try{
+    let list = JSON.parse(localStorage.getItem('dub_commandes')||'[]');
+    if(Array.isArray(list) && list.length){
+      let c = list[0];
+      return { groupes: c.groupes||[], titre: c.titre||'BON DE COMMANDE', date: c.date||new Date().toLocaleDateString('fr-CD') };
+    }
+  }catch(e){}
+  return { groupes: [], titre: 'BON DE COMMANDE', date: new Date().toLocaleDateString('fr-CD') };
+}
+let data = getGroupes();
+let groupes = data.groupes;
+let html = '';
+if(!groupes.length){
+  html = '<div class="page"><h2>Aucune commande à imprimer</h2><p>Retourne sur Créer Commande ou Historique et clique sur Imprimer.</p></div>';
+} else {
+  groupes.forEach(g=>{
+    let nomF = nomFournisseur(g);
+    let info = infoFournisseur(nomF);
+    let produits = (g.produits||[]).filter(estActif);
+    if(!produits.length) return;
+    let totalF = 0;
+    let lignes = '';
+    produits.forEach(p=>{
+      let qte = Number(p.quantite_commande ?? p.quantite_boites ?? p.quantite ?? p.q ?? 0);
+      let prix = Number(p.prix_achat ?? p.p ?? 0);
+      let total = Number(p.total_ligne ?? p.t ?? (qte * prix));
+      totalF += total;
+      let uniteA = abrevUnite(p.unite_achat || p.u || 'BT');
+      let uniteV = abrevUnite(p.unite_vente || p.uv || '');
+      let equiv = '';
+      if(p.quantite_unites) equiv = ` <small>(= ${p.quantite_unites} ${uniteV})</small>`;
+      else if(p.contenance && Number(p.contenance)>1 && uniteV) equiv = ` <small>(= ${qte * Number(p.contenance)} ${uniteV})</small>`;
+      lignes += `<tr><td>${p.produit_nom || p.n || ''}</td><td>${qte} ${uniteA}${equiv}</td><td>${fmt(prix)} FC</td><td>${fmt(total)} FC</td></tr>`;
+    });
+    html += `<div class="page"><h2>BON DE COMMANDE - DUBENZEN</h2><h3>FOURNISSEUR : ${nomF}</h3><p>Adresse : ${info.adresse||''}<br>Tél : ${info.telephone||info.tel||''} | Email : ${info.email||''} | Contact : ${info.contact||''}</p><p>${data.titre}<br>Date : ${data.date}</p><table><tr><th>Produit</th><th>Quantité</th><th>Prix</th><th>Total</th></tr>${lignes}</table><div class="total">TOTAL ${nomF} = ${fmt(totalF)} FC</div><br><br><p>Signature Gérant : ___________________ &nbsp;&nbsp; Signature Fournisseur : ___________________</p></div>`;
+  });
+}
+document.getElementById('pages').innerHTML = html;
+</script>
+</body>
+</html>

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Priorités Fournisseurs - DUBENZEN</title>
+<style>
+body{background:#0b0e14;color:#fff;font-family:Arial,sans-serif;padding:14px;margin:0}
+.card{background:#151a26;border:1px solid #222735;border-radius:12px;padding:14px;margin-bottom:14px}
+input,select,textarea{padding:10px;border-radius:8px;border:1px solid #333;background:#1f2937;color:#fff;width:100%;box-sizing:border-box}
+button{padding:10px 14px;border-radius:8px;border:0;cursor:pointer;font-weight:900}
+.btn-yellow{background:#facc15;color:#000}
+.btn-green{background:#22c55e;color:#fff}
+.btn-dark{background:#1f2937;color:#fff;border:1px solid #333}
+.btn-red{background:#ef4444;color:#fff}
+.deux{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+@media(max-width:700px){ .deux{ grid-template-columns:1fr; } }
+.ligne{ display:flex; gap:8px; align-items:center; padding:8px 0; border-bottom:1px solid #222735; flex-wrap:wrap; }
+.ligne b{ flex:1; min-width:120px; }
+.badge{ background:#22c55e; color:#fff; padding:4px 10px; border-radius:20px; font-weight:900; font-size:13px; min-width:32px; text-align:center; display:inline-block; }
+.mini-select{ width:110px !important; padding:8px !important; font-size:13px; }
+</style>
+</head>
+<body>
+<h2>🏭 Priorités Fournisseurs</h2>
+<p style="color:#9aa3b2;font-size:13px">Tu ne tapes plus 1, 2, 3. Tu mets dans le panier. Et si tu es déjà à 10 et qu'un fournisseur devait être à la 5ème place, tu l'insères à la 5ème place, les autres descendent.</p>
+
+<div class="card">
+  <label style="font-weight:900;color:#facc15">📍 1. Sélectionne le site une fois :</label>
+  <select id="siteChoisi" onchange="changerSite()" style="margin-top:8px;font-size:16px;font-weight:900"></select>
+</div>
+
+<div class="card" style="display:grid;gap:10px">
+  <label style="font-weight:900">👥 2. Ajouter plusieurs fournisseurs d'un coup :</label>
+  <textarea id="nomsMultiples" rows="2" placeholder="Ex : SHALINA, TEDDY PHARMA, PHARMAKINA"></textarea>
+  <button class="btn-yellow" onclick="ajouterMultiples()">➕ Ajouter tous</button>
+</div>
+
+<div class="deux">
+  <div class="card">
+    <h3 style="margin:0;color:#facc15">📦 Fournisseurs disponibles <span id="nbRestants"></span></h3>
+    <input id="recherche" placeholder="Rechercher..." oninput="afficher()" style="margin-top:10px">
+    <div id="listeGauche" style="margin-top:10px"></div>
+  </div>
+
+  <div class="card" style="border-color:#22c55e">
+    <h3 style="margin:0;color:#22c55e">🛒 Panier - Ordre de priorité <span id="nbFaits"></span></h3>
+    <p style="color:#9aa3b2;font-size:12px;margin:6px 0 0">Pour : <b id="siteDroite" style="color:#fff"></b> • Le 1er en haut = N°1</p>
+    <div id="listeDroite" style="margin-top:10px"></div>
+    <button class="btn-green" onclick="validerTout()" style="width:100%;margin-top:12px">✅ VALIDER LE PANIER</button>
+    <a href="../commandes/commande-creer.html"><button class="btn-dark" type="button" style="width:100%;margin-top:8px">🧾 Aller à Commande</button></a>
+  </div>
+</div>
+
+<script>
+let panier = [];
+
+function getSitesFournisseur(){
+  let sites = ['DEPOT'];
+  try{ let s = JSON.parse(localStorage.getItem('dub_sites')||'[]'); if(Array.isArray(s)){ s.forEach(x=>{ let nom = typeof x==='string' ? x : (x.nom||x.name||x.id); if(nom && !sites.includes(nom)) sites.push(nom); }); } }catch(e){}
+  try{ let sp = JSON.parse(localStorage.getItem('dub_sites_produits')||'{}'); Object.keys(sp).forEach(k=>{ if(k && !sites.includes(k)) sites.push(k); }); }catch(e){}
+  return sites;
+}
+function nomSiteAffichage(site){ if(!site) return ''; if(String(site).toUpperCase()==='DEPOT') return 'Dépôt Central'; return site; }
+function getFournisseurs(){ try{ let a = JSON.parse(localStorage.getItem('dub_fournisseurs')||'[]'); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+function setFournisseurs(list){ localStorage.setItem('dub_fournisseurs', JSON.stringify(list)); }
+function remplirSelectSites(){
+  let sites = getSitesFournisseur();
+  let sel = document.getElementById('siteChoisi');
+  let actuel = sel.value || sites[0];
+  sel.innerHTML = sites.map(s=>`<option value="${s}">${nomSiteAffichage(s)}</option>`).join('');
+  if(sites.includes(actuel)) sel.value = actuel;
+}
+function chargerPanier(){
+  let site = document.getElementById('siteChoisi').value;
+  let list = getFournisseurs();
+  panier = list.filter(f=> (f.priorites||{})[site] !== undefined && (f.priorites||{})[site] !== '')
+    .sort((a,b)=> (a.priorites[site]||99)-(b.priorites[site]||99))
+    .map(f=> String(f.id));
+}
+function changerSite(){ chargerPanier(); afficher(); }
+function ajouterMultiples(){
+  let texte = document.getElementById('nomsMultiples').value.trim();
+  if(!texte) return alert('Mets au moins un nom');
+  let noms = texte.split(/[,;\n]+/).map(n=>n.trim()).filter(n=>n);
+  let list = getFournisseurs();
+  let ajoutes = 0;
+  noms.forEach(nom=>{
+    if(!list.some(x=> (x.nom||'').toLowerCase()===nom.toLowerCase())){
+      list.push({ id: Date.now().toString()+Math.random().toString(36).slice(2), nom: nom, telephone: '', tel: '', priorites: {} });
+      ajoutes++;
+    }
+  });
+  setFournisseurs(list);
+  document.getElementById('nomsMultiples').value = '';
+  alert('✅ '+ajoutes+' fournisseur(s) ajouté(s)');
+  afficher();
+}
+// ⭐ METTRE DANS LE PANIER À LA PLACE QUE TU CHOISIS
+function mettreDansPanier(id){
+  if(panier.includes(String(id))) return;
+  // On regarde la place choisie dans le petit select à côté du bouton
+  let sel = document.querySelector(`select[data-place-pour="${id}"]`);
+  let placeChoisie = sel ? sel.value : 'fin';
+  if(placeChoisie === 'fin'){
+    panier.push(String(id)); // À la fin : 11ème si tu es déjà à 10
+  } else {
+    let pos = parseInt(placeChoisie); // ex : 5
+    // On insère à la 5ème place (index 4). L'ancien 5 devient 6, 6 devient 7...
+    panier.splice(pos-1, 0, String(id));
+  }
+  afficher();
+}
+function enleverDuPanier(id){
+  panier = panier.filter(x=> String(x)!==String(id));
+  afficher();
+}
+function monter(id){
+  let i = panier.indexOf(String(id));
+  if(i > 0){ let tmp = panier[i-1]; panier[i-1] = panier[i]; panier[i] = tmp; afficher(); }
+}
+function descendre(id){
+  let i = panier.indexOf(String(id));
+  if(i >= 0 && i < panier.length-1){ let tmp = panier[i+1]; panier[i+1] = panier[i]; panier[i] = tmp; afficher(); }
+}
+// ⭐ DÉPLACER UN FOURNISSEUR DÉJÀ DANS LE PANIER VERS UNE AUTRE PLACE
+function deplacerVers(id){
+  let sel = document.querySelector(`select[data-deplacer="${id}"]`);
+  if(!sel) return;
+  let nouvellePlace = parseInt(sel.value);
+  if(isNaN(nouvellePlace)) return;
+  // On l'enlève de son ancienne place
+  panier = panier.filter(x=> String(x)!==String(id));
+  // On l'insère à la nouvelle place
+  panier.splice(nouvellePlace-1, 0, String(id));
+  afficher();
+}
+function supprimerFournisseur(id){
+  if(!confirm('Supprimer ce fournisseur ?')) return;
+  setFournisseurs(getFournisseurs().filter(x=> String(x.id)!==String(id)));
+  panier = panier.filter(x=> String(x)!==String(id));
+  afficher();
+}
+function afficher(){
+  let site = document.getElementById('siteChoisi').value;
+  let filtre = (document.getElementById('recherche').value||'').toLowerCase().trim();
+  document.getElementById('siteDroite').textContent = nomSiteAffichage(site);
+  let list = getFournisseurs();
+  let map = {}; list.forEach(f=> map[String(f.id)] = f);
+  let gauche = list.filter(f=> !panier.includes(String(f.id)) && (!filtre || (f.nom||'').toLowerCase().includes(filtre)));
+  let droite = panier.map(id=> map[String(id)]).filter(Boolean);
+  document.getElementById('nbRestants').textContent = '('+gauche.length+')';
+  document.getElementById('nbFaits').textContent = '('+droite.length+')';
+
+  // Options pour choisir la place : 1 à (panier+1)
+  let optionsPlaces = '';
+  for(let i=1; i<=panier.length+1; i++){ optionsPlaces += `<option value="${i}">Place N°${i}</option>`; }
+
+  if(!gauche.length) document.getElementById('listeGauche').innerHTML = '<p style="color:#22c55e;font-weight:900">🎉 Tout le monde est dans le panier !</p>';
+  else document.getElementById('listeGauche').innerHTML = gauche.map(f=>`
+    <div class="ligne">
+      <b>${f.nom}</b>
+      <select class="mini-select" data-place-pour="${f.id}">
+        <option value="fin">À la fin (N°${panier.length+1})</option>
+        ${optionsPlaces}
+      </select>
+      <button class="btn-yellow" onclick="mettreDansPanier('${f.id}')">➕ Mettre dans le panier</button>
+      <button class="btn-red" onclick="supprimerFournisseur('${f.id}')">🗑️</button>
+    </div>`).join('');
+
+  if(!droite.length) document.getElementById('listeDroite').innerHTML = '<p style="color:#9aa3b2">Panier vide.<br>Choisis la place, puis clique "Mettre dans le panier".</p>';
+  else document.getElementById('listeDroite').innerHTML = droite.map((f, idx)=>`
+    <div class="ligne">
+      <span class="badge">N°${idx+1}</span>
+      <b>${f.nom}</b>
+      <button class="btn-dark" onclick="monter('${f.id}')">⬆️</button>
+      <button class="btn-dark" onclick="descendre('${f.id}')">⬇️</button>
+      <select class="mini-select" data-deplacer="${f.id}" onchange="deplacerVers('${f.id}')">
+        <option value="">Déplacer vers...</option>
+        ${droite.map((_, i)=>`<option value="${i+1}">Place N°${i+1}</option>`).join('')}
+      </select>
+      <button class="btn-red" onclick="enleverDuPanier('${f.id}')">✖️</button>
+    </div>`).join('');
+}
+function validerTout(){
+  let site = document.getElementById('siteChoisi').value;
+  let list = getFournisseurs();
+  list.forEach(f=>{ if(f.priorites) delete f.priorites[site]; });
+  panier.forEach((id, idx)=>{
+    let f = list.find(x=> String(x.id)===String(id));
+    if(f){ f.priorites = f.priorites || {}; f.priorites[site] = idx+1; }
+  });
+  setFournisseurs(list);
+  alert('✅ VALIDÉ pour ' + nomSiteAffichage(site) + '\n' + panier.map((id,idx)=>{
+    let f = list.find(x=> String(x.id)===String(id));
+    return (idx+1) + ' - ' + (f ? f.nom : '');
+  }).join('\n'));
+  afficher();
+}
+remplirSelectSites();
+chargerPanier();
+afficher();
+</script>
+</body>
+</html>

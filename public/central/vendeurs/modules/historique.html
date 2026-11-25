@@ -1,0 +1,218 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Mes Ventes</title></head>
+<body style="margin:0;padding:0;font-family:Arial;background:#F2F3F5;color:#111">
+<style>
+*{box-sizing:border-box}
+.top{background:#0A0E1A;color:#fff;padding:16px;border-radius:0 0 20px 20px}
+.card{background:#fff;border:1px solid #EDEEF1;border-radius:14px;padding:12px}
+.stat{flex:1;background:#fff;border:1px solid #EDEEF1;border-radius:12px;padding:10px;text-align:center}
+.chip{padding:8px 13px;border-radius:100px;border:1px solid #E5E7EB;background:#fff;color:#64748B;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.chip.active{background:#111;color:#fff}
+.input{width:100%;background:#F8F9FA;border:1px solid #E5E7EB;border-radius:10px;padding:11px;color:#111;outline:none;font-size:13px;font-weight:600}
+select.input{appearance:none}
+.row{background:#fff;border:1px solid #EDEEF1;border-radius:14px;padding:11px;margin-bottom:7px}
+.vue-btn{flex:1;padding:11px;border-radius:10px;border:none;font-weight:800;cursor:pointer;font-size:13px}
+.vue-btn.active{background:#111;color:#fff}
+.vue-btn.inactive{background:#F8F9FA;color:#64748B;border:1px solid #E5E7EB}
+#zoneImpression{display:none}
+@page{ size:80mm auto; margin:0 !important; padding:0 !important; }
+@media print{
+  html,body{ width:80mm !important; max-width:80mm !important; margin:0 !important; padding:0 !important; background:#fff !important; color:#000 !important; }
+  body > *:not(#zoneImpression){ display:none !important; }
+  #zoneImpression{ display:block !important; width:80mm !important; max-width:80mm !important; margin:0 !important; padding:4mm 4mm !important; color:#000 !important; background:#fff !important; font-family:Arial, monospace !important; font-size:12px !important; line-height:1.6 !important; }
+  #zoneImpression *{ color:#000 !important; background:transparent !important; max-width:100% !important; }
+}
+</style>
+
+<div id="zoneImpression"></div>
+
+<div class="top">
+<div style="display:flex;justify-content:space-between"><b style="font-size:18px">MES VENTES • <span style="color:#FACC15" id="siteName">VICTOIRE</span></b><span id="dateJour" style="font-size:12px;color:#94A3B8"></span></div>
+<div style="margin-top:12px"><div style="font-size:11px;color:#94A3B8">AUJOURD'HUI</div><div id="totalJourBig" style="font-size:24px;font-weight:900;color:#22C55E">0 FC</div><div id="sousTotalJour" style="font-size:12px;color:#CBD5E1">0 vente</div></div>
+</div>
+
+<div style="padding:10px">
+<div style="display:flex;gap:7px;margin-bottom:10px">
+<div class="stat"><div style="font-size:10px;color:#94A3B8">VENTES</div><b id="totalNb" style="font-size:17px">0</b></div>
+<div class="stat"><div style="font-size:10px;color:#94A3B8">TOTAL</div><b id="totalVendu" style="font-size:17px;color:#22C55E">0 FC</b></div>
+<div class="stat"><div style="font-size:10px;color:#94A3B8">QTÉ</div><b id="totalQte" style="font-size:17px;color:#F59E0B">0</b></div>
+</div>
+
+<div style="display:flex;gap:7px;margin-bottom:10px">
+  <button id="btnVueProduit" class="vue-btn active" onclick="setVue('produit')">📦 PAR PRODUIT</button>
+  <button id="btnVueFacture" class="vue-btn inactive" onclick="setVue('facture')">🧾 PAR FACTURE</button>
+</div>
+
+<div class="card" style="margin-bottom:10px">
+<div style="display:flex;gap:6px;overflow-x:auto" id="chips">
+<button class="chip active" onclick="setP('today',this)">Aujourd'hui</button>
+<button class="chip" onclick="setP('yesterday',this)">Hier</button>
+<button class="chip" onclick="setP('7j',this)">7 jours</button>
+<button class="chip" onclick="setP('30j',this)">30 jours</button>
+<button class="chip" onclick="setP('mois',this)">Ce mois</button>
+<button class="chip" onclick="setP('all',this)">Tout</button>
+<button class="chip" onclick="setP('custom',this)">Perso.</button>
+</div>
+<div id="customDates" style="display:none;gap:8px;margin-top:8px">
+<input type="date" id="dateDebut" class="input" onchange="filtrer()">
+<input type="date" id="dateFin" class="input" onchange="filtrer()">
+</div>
+</div>
+
+<div class="card" style="margin-bottom:10px">
+<input id="search" class="input" placeholder="🔍 Client, produit, N° facture..." oninput="filtrer()">
+<div style="display:flex;gap:7px;margin-top:8px">
+<select id="fProduit" class="input" onchange="filtrer()"><option value="">Tous produits</option></select>
+<select id="tri" class="input" onchange="filtrer()"><option value="recent">Récentes</option><option value="ancien">Anciennes</option><option value="montant_desc">Montant ↓</option><option value="montant_asc">Montant ↑</option></select>
+</div>
+</div>
+
+<div id="list"></div>
+</div>
+
+<script>
+function fmt(n){return Number(n||0).toLocaleString('fr-FR')+' FC'}
+function getMe(){
+  try{
+    let u=JSON.parse(localStorage.getItem('user')||'{}');
+    let uid=localStorage.getItem('dub_current_user_id')||u.id||u.userId||'';
+    let site=u.siteId||u.siteName||'victoire';
+    if(!uid){
+      let users=JSON.parse(localStorage.getItem('dub_users')||'[]');
+      let m=users.find(x=>x.username===u.username||x.nom===u.nom);
+      if(m){uid=m.id; site=m.siteId||site;}
+    }
+    return {id:String(uid||''), site:site, nom:u.nom||u.username||''};
+  }catch(e){ return {id:'', site:'victoire', nom:''} }
+}
+let ME=getMe();
+let SITE=ME.site;
+document.getElementById('siteName').innerText=String(SITE).toUpperCase();
+document.getElementById('dateJour').innerText=new Date().toLocaleDateString('fr-FR');
+let P='today', VUE='produit', TOUTES=[], GROUPES=[];
+
+function getV(){
+  let a=[];try{a=JSON.parse(localStorage.getItem('dub_ventes')||'[]')}catch(e){}
+  return a.filter(v=>{
+    if(String(v.siteId||v.site||'').toLowerCase()!==String(SITE).toLowerCase()) return false;
+    let vid=String(v.vendeurId||v.vendeur||v.userId||'');
+    if(ME.id && vid===ME.id) return true;
+    if(ME.nom && (vid===ME.nom || v.vendeurNom===ME.nom)) return true;
+    if(!vid) return true;
+    return false;
+  });
+}
+function mont(v){return Number(v.valeurPV??v.valeur??v.total_vente??v.total??(Number(v.pv||0)*Number(v.qte||v.quantite||0)))||0}
+function qte(v){return Number(v.qte??v.quantite??0)||0}
+function dte(v){return new Date(v.date||v.createdAt||Date.now())}
+function memeJ(a,b){return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate()}
+function init(){
+  TOUTES=getV();
+  let ps=[...new Set(TOUTES.map(v=>v.produit||'').filter(Boolean))].sort();
+  document.getElementById('fProduit').innerHTML='<option value="">Tous produits</option>'+ps.map(p=>`<option>${p}</option>`).join('');
+  let tj=TOUTES.filter(v=>memeJ(dte(v),new Date()));
+  document.getElementById('totalJourBig').innerText=fmt(tj.reduce((s,v)=>s+mont(v),0));
+  document.getElementById('sousTotalJour').innerText=tj.length+' vente • '+tj.reduce((s,v)=>s+qte(v),0)+' art.';
+}
+function setVue(v){
+  VUE=v;
+  document.getElementById('btnVueProduit').className='vue-btn '+(v==='produit'?'active':'inactive');
+  document.getElementById('btnVueFacture').className='vue-btn '+(v==='facture'?'active':'inactive');
+  filtrer();
+}
+function setP(p,b){P=p;document.querySelectorAll('#chips .chip').forEach(c=>c.classList.remove('active'));if(b)b.classList.add('active');document.getElementById('customDates').style.display=p==='custom'?'flex':'none';if(p==='custom'){let d=new Date(),s=new Date();s.setDate(d.getDate()-7);if(!document.getElementById('dateDebut').value)document.getElementById('dateDebut').value=s.toISOString().slice(0,10);if(!document.getElementById('dateFin').value)document.getElementById('dateFin').value=d.toISOString().slice(0,10);}filtrer()}
+function inP(v){let d=dte(v),n=new Date();if(P==='today')return memeJ(d,n);if(P==='yesterday'){let h=new Date(n);h.setDate(h.getDate()-1);return memeJ(d,h)}if(P==='7j'){let s=new Date(n);s.setDate(s.getDate()-6);s.setHours(0,0,0,0);return d>=s}if(P==='30j'){let s=new Date(n);s.setDate(s.getDate()-29);s.setHours(0,0,0,0);return d>=s}if(P==='mois'){return d>=new Date(n.getFullYear(),n.getMonth(),1)}if(P==='custom'){let dd=document.getElementById('dateDebut').value,df=document.getElementById('dateFin').value;if(dd){let s=new Date(dd);s.setHours(0,0,0,0);if(d<s)return false}if(df){let e=new Date(df);e.setHours(23,59,59,999);if(d>e)return false}return true}return true}
+
+function grouperParFacture(list){
+  var map={};
+  list.forEach(function(v,i){
+    var tid=v.transactionId||v.idVente||v.venteId||v.id||('L_'+i);
+    var key='TX_'+tid;
+    if(!map[key]) map[key]={tid:tid, date:v.date||v.createdAt||'', client:v.client||'Client', vendeur:v.vendeurNom||v.vendeur||'', total:0, qte:0, items:[], phone:v.phone||''};
+    var qq=qte(v);
+    var pv=Number(v.pv||v.prix||0);
+    var tt=mont(v);
+    if(pv===0 && tt>0 && qq>0) pv=tt/qq;
+    map[key].total+=tt;
+    map[key].qte+=qq;
+    map[key].items.push({produit:v.produit||v.nom||'Produit', qte:qq, pv:pv, total:tt});
+  });
+  var out=[]; for(var k in map) out.push(map[k]);
+  return out;
+}
+
+function filtrer(){
+  let q=(document.getElementById('search').value||'').toLowerCase().trim();
+  let fp=document.getElementById('fProduit').value, tri=document.getElementById('tri').value;
+  let list=TOUTES.filter(inP);
+  let groupes=grouperParFacture(list);
+  GROUPES=groupes;
+
+  let lignes=list;
+  if(fp) lignes=lignes.filter(v=>(v.produit||'')===fp);
+  if(q.length>=2) lignes=lignes.filter(v=>{let h=((v.client||'')+' '+(v.produit||'')+' '+mont(v)+' '+(v.phone||'')+' '+(v.transactionId||v.idVente||'')).toLowerCase();return q.split(' ').every(m=>h.includes(m))});
+
+  let groupesAffiches=groupes;
+  if(fp) groupesAffiches=groupesAffiches.filter(function(g){ return g.items.some(function(it){ return it.produit===fp; }); });
+  if(q.length>=2){
+    let mots=q.split(' ');
+    groupesAffiches=groupesAffiches.filter(function(g){
+      let texte=(g.tid+' '+g.client+' '+(g.phone||'')+' '+g.total+' '+g.items.map(function(it){return it.produit}).join(' ')).toLowerCase();
+      return mots.every(function(m){ return texte.includes(m); });
+    });
+  }
+
+  if(tri==='recent'){ lignes.sort((a,b)=>dte(b)-dte(a)); groupesAffiches.sort((a,b)=>new Date(b.date)-new Date(a.date)); }
+  if(tri==='ancien'){ lignes.sort((a,b)=>dte(a)-dte(b)); groupesAffiches.sort((a,b)=>new Date(a.date)-new Date(b.date)); }
+  if(tri==='montant_desc'){ lignes.sort((a,b)=>mont(b)-mont(a)); groupesAffiches.sort((a,b)=>b.total-a.total); }
+  if(tri==='montant_asc'){ lignes.sort((a,b)=>mont(a)-mont(b)); groupesAffiches.sort((a,b)=>a.total-b.total); }
+
+  if(VUE==='produit'){
+    document.getElementById('totalNb').innerText=lignes.length;
+    document.getElementById('totalVendu').innerText=fmt(lignes.reduce((s,v)=>s+mont(v),0));
+    document.getElementById('totalQte').innerText=lignes.reduce((s,v)=>s+qte(v),0);
+  } else {
+    document.getElementById('totalNb').innerText=groupesAffiches.length;
+    document.getElementById('totalVendu').innerText=fmt(groupesAffiches.reduce((s,g)=>s+g.total,0));
+    document.getElementById('totalQte').innerText=groupesAffiches.reduce((s,g)=>s+g.qte,0);
+  }
+
+  if(VUE==='produit'){
+    document.getElementById('list').innerHTML=lignes.map(v=>{
+      let d=dte(v);
+      return `<div class="row"><div style="display:flex;justify-content:space-between;gap:8px"><b>${v.produit||''}</b><b style="color:#22C55E">${fmt(mont(v))}</b></div><div style="font-size:12px;color:#64748B;margin-top:3px">${v.client||'Client'}<br>${d.toLocaleDateString('fr-FR')} ${d.toLocaleTimeString('fr-FR')} • ${qte(v)} x ${fmt(Number(v.pv||0))}</div></div>`;
+    }).join('')||'<div style="text-align:center;color:#94A3B8;padding:20px">Aucune vente</div>';
+  } else {
+    document.getElementById('list').innerHTML=groupesAffiches.map(g=>{
+      let d=new Date(g.date);
+      let itemsHtml=g.items.map(it=>`<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px dashed #EDEEF1"><span>${it.produit} <span style="color:#94A3B8">(${it.qte} x ${fmt(it.pv)})</span></span><b>${fmt(it.total)}</b></div>`).join('');
+      return `<div class="row"><div style="display:flex;justify-content:space-between;gap:8px"><span><b style="font-size:13px">${g.tid}</b><br><span style="font-size:12px;color:#64748B">${g.client} • ${g.qte} art</span><br><span style="font-size:11px;color:#94A3B8">${d.toLocaleDateString('fr-FR')} ${d.toLocaleTimeString('fr-FR')}</span></span><b style="color:#22C55E;font-size:15px">${fmt(g.total)}</b></div><div style="margin:8px 0;background:#F8F9FA;border-radius:10px;padding:8px">${itemsHtml}</div><button onclick="reimprimerFactureVente('${g.tid}')" style="width:100%;padding:11px;border-radius:10px;background:#111;color:#fff;border:none;font-weight:800;cursor:pointer;font-size:13px">🖨️ RÉIMPRIMER FACTURE</button></div>`;
+    }).join('')||'<div style="text-align:center;color:#94A3B8;padding:20px">Aucune vente</div>';
+  }
+}
+
+function reimprimerFactureVente(tid){
+  var g=null;
+  for(var i=0;i<GROUPES.length;i++){ if(String(GROUPES[i].tid)===String(tid)){ g=GROUPES[i]; break; } }
+  if(!g){
+    var toutes=getV().filter(inP);
+    var grp=grouperParFacture(toutes);
+    for(var j=0;j<grp.length;j++){ if(String(grp[j].tid)===String(tid)){ g=grp[j]; break; } }
+  }
+  if(!g){ alert('Facture introuvable'); return; }
+  var html='';
+  html+='<div style="text-align:center;padding:6px 0 10px"><b style="font-size:15px">DUBENZENE - '+String(SITE).toUpperCase()+'</b><div style="margin-top:6px">*** FACTURE DE VENTE ***</div><div style="margin-top:4px">N° '+g.tid+'</div><div style="margin-top:4px">'+new Date(g.date).toLocaleString('fr-FR')+'</div></div>';
+  html+='<div style="border-top:1px dashed #000;margin:8px 0 12px"></div>';
+  html+='<div>Client : <b>'+g.client+'</b></div><div>Vendeur : '+(g.vendeur||ME.nom||'')+'</div>';
+  html+='<div style="border-top:1px dashed #000;margin:8px 0 12px"></div>';
+  g.items.forEach(function(it){
+    html+='<div style="margin:4px 0"><b>'+it.produit+'</b></div><div style="display:flex;justify-content:space-between"><span>'+it.qte+' x '+Number(it.pv).toLocaleString('fr-FR')+'</span><b>'+Number(it.total).toLocaleString('fr-FR')+'</b></div>';
+  });
+  html+='<div style="border-top:1px dashed #000;margin:12px 0"></div>';
+  html+='<div style="display:flex;justify-content:space-between;font-size:14px"><b>TOTAL :</b><b>'+Number(g.total).toLocaleString('fr-FR',{minimumFractionDigits:2})+' FC</b></div>';
+  html+='<div style="text-align:center;margin-top:14px">*** MERCI ***</div><br><br><br>';
+  document.getElementById('zoneImpression').innerHTML=html;
+  window.print();
+}
+
+init(); filtrer(); setInterval(()=>{init();filtrer()},5000);
+</script></body></html>

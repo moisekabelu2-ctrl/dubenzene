@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Détail Produit - Dépôt PA seulement</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0f1115;color:#fff;font-family:Inter,sans-serif;padding:16px}
+.btn-back{margin-bottom:18px;background:#171a23;border:1px solid #222735;padding:10px 16px;border-radius:12px;color:#fff;font-size:13px;cursor:pointer}
+.wrap{max-width:1000px;margin:0 auto}
+.card{background:#171a23;border:1px solid #222735;border-radius:16px;padding:20px;overflow:visible !important}
+.h1{font-size:22px;font-weight:900}
+.badges{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.badge{padding:6px 12px;border-radius:999px;font-size:11px;font-weight:700;border:1px solid #2a3045;background:#1f2438}
+.badge-yellow{background:rgba(250,204,21,.15);color:#facc15}
+.section{font-size:11px;font-weight:900;color:#facc15;text-transform:uppercase;margin:20px 0 10px}
+.grid{display:grid;gap:10px;margin-bottom:10px;overflow:visible !important}
+.grid-4{grid-template-columns:repeat(4,1fr)} .grid-3{grid-template-columns:repeat(3,1fr)}
+@media(max-width:800px){.grid-4{grid-template-columns:repeat(2,1fr)}}@media(max-width:500px){.grid-4,.grid-3{grid-template-columns:1fr}}
+.field{position:relative}
+.field label{font-size:10px;color:#5a6080;font-weight:700;text-transform:uppercase;display:block;margin-bottom:4px}
+.field label.req{color:#facc15}
+.input{width:100%;background:#0f1115;border:1px solid #222735;border-radius:12px;padding:11px 14px;color:#fff;font-size:13px}
+.input:focus{border-color:#facc15;outline:none}
+.input-req{border:2px solid #facc15;background:rgba(250,204,21,.08)}
+.input-yellow{border-color:rgba(250,204,21,.4);background:rgba(250,204,21,.08);color:#facc15;font-weight:900}
+.actions{display:flex;gap:10px;margin-top:24px}
+.btn{flex:1;padding:14px;border-radius:12px;font-weight:800;font-size:13px;cursor:pointer;border:0}
+.btn-cancel{background:#1f2438;color:#fff} .btn-save{background:#facc15;color:#000;flex:2}
+.wrapper{position:relative}
+.drop-list{position:absolute;top:100%;left:0;right:0;background:#0f1115;border:2px solid #facc15;border-radius:12px;margin-top:6px;max-height:280px;overflow-y:auto;z-index:9999;display:none;box-shadow:0 10px 30px rgba(0,0,0,.9)}
+.drop-list.show{display:block}
+.drop-item{padding:11px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid #1f2438}
+.drop-item:hover{background:rgba(250,204,21,.15);color:#facc15}
+.drop-empty{padding:12px;text-align:center;color:#6a7085;font-size:11px}
+.info{font-size:10px;margin-top:4px}
+.info-green{color:#22c55e;font-weight:700}
+.four-search{width:calc(100% - 20px);margin:10px;background:#171a23;border:1px solid #facc15;border-radius:10px;padding:11px 14px;color:#fff;font-size:13px;position:sticky;top:0}
+.four-readonly{cursor:pointer;background:rgba(250,204,21,.08)}
+</style>
+</head>
+<body>
+<button onclick="goBack()" class="btn-back">← Retour liste</button>
+<div class="wrap"><div class="card">
+<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;border-bottom:1px solid #222735;padding-bottom:16px;margin-bottom:10px">
+<div><h1 class="h1" id="title">Chargement...</h1><div class="badges"><span id="badge_stock" class="badge">Stock 0</span><span id="badge_per" class="badge">Péremption -</span><span id="badge_role" class="badge" style="color:#facc15"></span><span id="badge_commande" class="badge badge-yellow">À commander : -</span></div></div>
+</div>
+<div class="section" style="margin-top:0">1. Identité Produit</div>
+<div class="grid grid-4">
+<div class="field" style="grid-column:span 2"><label>1. NOM *</label><input id="f_nom" class="input"></div>
+<div class="field"><label>Code</label><input id="f_code" class="input"></div>
+<div class="field"><label>Code Barre</label><input id="f_barcode" class="input"></div>
+<div class="field wrapper"><label>9. CATEGORIE</label><input id="f_cat" class="input" placeholder="Tape ou choisis..." autocomplete="off" oninput="filterList('cat')" onfocus="showList('cat')"><div id="list-cat" class="drop-list"></div></div>
+<div class="field"><label>Statut</label><select id="f_statut" class="input"><option>Disponible</option><option>Rupture</option><option>Bloqué</option></select></div>
+</div>
+<div class="section">2. Fournisseur & Logistique</div>
+<div class="grid grid-4">
+<div class="field wrapper" style="grid-column:span 2">
+<label class="req">8. FOURNISSEUR * - Clique pour choisir</label>
+<input id="f_fournisseur" class="input input-req four-readonly" placeholder="👆 Clique ici pour voir les 37 fournisseurs" readonly onclick="openFour()" autocomplete="off">
+<div id="list-four" class="drop-list">
+<input id="search-four" class="four-search" placeholder="🔍 Tape le nom du fournisseur... ex: NAGORA" oninput="filterFourFromSearch()">
+<div id="list-four-items"></div>
+</div>
+<div id="info-four" class="info info-green"></div>
+</div>
+<div class="field"><label>Contact</label><input id="f_contact_fourn" class="input"></div>
+<div class="field"><label>Dépôt</label><input value="Dépôt Central" disabled class="input" style="opacity:.6"></div>
+
+<div class="field">
+<label style="color:#facc15">UNITÉ STOCK / VENTE *</label>
+<select id="f_unite_vente" class="input">
+<option value="PLQ">PLQ - Plaquette</option>
+<option value="BT">BT - Boîte</option>
+<option value="FL">FL - Flacon</option>
+<option value="AMP">AMP - Ampoule</option>
+<option value="TUBE">TUBE - Tube</option>
+<option value="SACHET">SACHET - Sachet</option>
+<option value="PCE">PCE - Pièce</option>
+<option value="L">L - Litre</option>
+<option value="KG">KG - Kilo</option>
+</select>
+<div class="info" style="color:#facc15">En quoi tu comptes ton stock</div>
+</div>
+
+<div class="field">
+<label style="color:#facc15">UNITÉ ACHAT *</label>
+<select id="f_unite_achat" class="input">
+<option value="BT">BT - Boîte</option>
+<option value="PLQ">PLQ - Plaquette</option>
+<option value="FL">FL - Flacon</option>
+<option value="CTN">CTN - Carton</option>
+<option value="AMP">AMP - Ampoule</option>
+<option value="PCE">PCE - Pièce</option>
+<option value="L">L - Litre</option>
+<option value="KG">KG - Kilo</option>
+</select>
+<div class="info" style="color:#facc15">En quoi tu commandes</div>
+</div>
+
+<div class="field"><label>7. CONTENANCE *</label><input id="f_contenance" type="number" class="input" value="1"><div class="info" style="color:#facc15">Ex: 1 BT = 3 PLQ → Mets 3</div></div>
+
+<div class="field wrapper">
+<label>Conditionnement (Auto)</label>
+<input id="f_conditionnement" class="input" placeholder="Boîte, Flacon..." autocomplete="off" oninput="filterList('cond')" onfocus="showList('cond')">
+<div id="list-cond" class="drop-list"></div>
+<div id="info-cond" class="info" style="color:#facc15"></div>
+</div>
+
+<div class="field"><label>Emplacement</label><input id="f_emplacement" class="input"></div>
+<div class="field"><label>Lot</label><input id="f_lot" class="input"></div>
+<div class="field"><label>Devise</label><select id="f_devise" class="input"><option>CDF</option><option>USD</option></select></div>
+</div>
+<div class="section">3. Stock & Péremption</div>
+<div class="grid grid-4">
+<div class="field"><label>2. STOCK DISPO</label><input id="f_stock" type="number" class="input"></div>
+<div class="field"><label>Stock Min</label><input id="f_stock_min" type="number" class="input"></div>
+<div class="field"><label>6. STOCK MAX</label><input id="f_stock_max" type="number" class="input"></div>
+<div class="field"><label>5. STOCK ALERTE</label><input id="f_alerte" type="number" class="input"></div>
+<div class="field"><label style="color:#facc15">10. DATE DE PEREMPTION</label><input id="f_peremption" type="date" class="input"></div>
+<div class="field"><label>Jours restants</label><div id="f_jours" style="padding:11px 14px;background:#0f1115;border:1px solid #222735;border-radius:12px;font-weight:700">--</div></div>
+<div class="field" style="grid-column:span 2"><label>Explication Commande</label><div id="f_explication" style="padding:11px 14px;background:rgba(250,204,21,.08);border:1px dashed rgba(250,204,21,.3);border-radius:12px;font-size:11px;line-height:1.6">--</div></div>
+</div>
+<div class="section" style="color:#facc15">4. Prix Dépôt - PA seulement</div>
+<div class="grid grid-3">
+<div class="field"><label style="color:#facc15">3. PAU *</label><input id="f_pa" type="number" class="input input-yellow" placeholder="Ex: 6000"></div>
+<div class="field"><label style="color:#facc15">4. PAT (auto)</label><input id="f_pat" class="input input-yellow" disabled style="opacity:.9"></div>
+<div class="field"><div style="background:rgba(250,204,21,.08);border:1px dashed rgba(250,204,21,.3);padding:11px 14px;border-radius:12px;font-size:11px;line-height:1.6">💡 <b>Dépôt = PA seulement.</b><br>PAT = PAU x STOCK.<br>La <b>Marge</b> et le <b>PV</b> se définissent dans <b>Sites</b>.<br><span style="color:#22c55e">✅ Modifié ici = modifié aussi dans tous les Sites.</span></div></div>
+</div>
+<div class="actions"><button onclick="goBack()" class="btn btn-cancel">← Retour liste</button><button onclick="saveAll()" class="btn btn-save">💾 VALIDER ET ENREGISTRER</button></div>
+<p id="msg" style="text-align:center;margin-top:12px;font-weight:900"></p>
+</div></div>
+<script>
+const KEY='dubenzen_produits';
+let id=new URLSearchParams(location.search).get('id');
+let prod={};
+let oldNom='', oldFournisseur='', oldLot='', oldPeremption='';
+let allFour=[], allCat=[], allCond=[];
+function getUserRole(){let role=localStorage.getItem('user_role')||localStorage.getItem('dub_user_role')||localStorage.getItem('role')||'';try{let u=JSON.parse(localStorage.getItem('dub_user')||localStorage.getItem('currentUser')||localStorage.getItem('user')||localStorage.getItem('dub_current_user')||'null');if(u&&u.role)role=u.role;else if(u&&u.type)role=u.type;else if(u&&u.fonction)role=u.fonction;}catch(e){}return (role||'').toString().toLowerCase().trim();}
+function isGerantOuVendeur(){let r=getUserRole();return r.includes('gerant')||r.includes('gérant')||r.includes('vendeur')||r.includes('vendeuse')||r.includes('caissier')||r.includes('seller')||r.includes('manager');}
+function isAdminOuDepot(){let r=getUserRole();if(!r)return false;return r.includes('admin')||r.includes('depot')||r.includes('dépôt')||r.includes('super')||r.includes('patron')||r.includes('proprietaire');}
+function doitCacherPA(){if(isAdminOuDepot())return false;if(isGerantOuVendeur())return true;return false;}
+function applyRoleUI(){let pvSeulement=doitCacherPA();let roleEl=document.getElementById('badge_role');if(roleEl)roleEl.textContent='Rôle: '+(getUserRole()||'admin')+(pvSeulement?' • Vue Dépôt restreinte':' • Vue Dépôt PA');if(pvSeulement){document.getElementById('f_pa').disabled=true;}}
+function getAll(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){return []}}
+function normKey(s){ return (s||'').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim(); }
+function cleProduit(p){ return normKey(p.nom||'')+'|'+normKey(p.fournisseur||'')+'|'+normKey(p.lot||'')+'|'+(p.peremption||'').toString().trim(); }
+function jours(d){if(!d)return 9999;return Math.ceil((new Date(d)-new Date())/(1000*60*60*24))}
+function upd(){
+ let st=+f_stock.value||0; let pau=+f_pa.value||0; let pat=pau*st;
+ document.getElementById('f_pat').value = pat.toLocaleString()+' CDF';
+ let uniteVente = document.getElementById('f_unite_vente').value || 'PLQ';
+ let uniteAchat = document.getElementById('f_unite_achat').value || 'BT';
+ let alerte=+f_alerte.value||0; let max=+f_stock_max.value||0; let cont=+f_contenance.value||1;
+ if(uniteVente===uniteAchat) cont=1;
+ if(cont<=0) cont=1;
+ let besoinVente = Math.max(0, max - st);
+ let cmd = st<=alerte ? Math.ceil(besoinVente / cont) : 0;
+ badge_stock.textContent=`Stock ${st} ${uniteVente} - PAT ${pat.toLocaleString()}`;
+ let badgeCmd=document.getElementById('badge_commande');
+ if(cmd>0){
+   badgeCmd.textContent = `⚠️ À COMMANDER : ${cmd} ${uniteAchat} (= ${besoinVente} ${uniteVente})`;
+   badgeCmd.style.color = '#f87171';
+ } else {
+   badgeCmd.textContent = '✅ Stock OK - Rien à commander';
+   badgeCmd.style.color = '#22c55e';
+ }
+ let expl = document.getElementById('f_explication');
+ if(expl){
+   if(cmd>0) expl.innerHTML = `Besoin = Max (${max}) - Stock (${st}) = <b>${besoinVente} ${uniteVente}</b><br>1 ${uniteAchat} = ${cont} ${uniteVente}<br>À commander = ${besoinVente} / ${cont} = <b>${cmd} ${uniteAchat}</b>`;
+   else expl.innerHTML = `Stock ${st} ${uniteVente} > Alerte ${alerte} → Rien à commander`;
+ }
+ let condEl=document.getElementById('f_conditionnement');
+ if(condEl && !condEl.value) condEl.value = uniteAchat;
+ let jr=jours(f_peremption.value);
+ if(jr===9999){f_jours.textContent='--';badge_per.textContent='Péremption -'}
+ else if(jr<0){f_jours.textContent=`EXPIRÉ ${Math.abs(jr)}j`;f_jours.style.color='#f87171';badge_per.textContent='EXPIRÉ'}
+ else if(jr<30){f_jours.textContent=`${jr}j ALERTE`;f_jours.style.color='#fb923c';badge_per.textContent=`${jr}j restants`}
+ else{f_jours.textContent=`${jr}j restants`;f_jours.style.color='#22c55e';badge_per.textContent=`OK ${jr}j`}
+}
+// ★★★ TOUS LES FOURNISSEURS ★★★
+function getNamesByKeyword(keyword){
+  let names=[];
+  let clesFournis = ['dub_fournisseurs','dubenzen_fournisseurs','fournisseurs'];
+  let clesCat = ['dub_categories','dubenzen_categories','categories'];
+  let clesCond = ['dub_conditionnements','dubenzen_conditionnements','conditionnements'];
+  let clesCibles = keyword.toLowerCase().includes('fournis') ? clesFournis : keyword.toLowerCase().includes('categor') ? clesCat : clesCond;
+  clesCibles.forEach(k=>{
+    try{
+      let parsed=JSON.parse(localStorage.getItem(k)||'[]');
+      if(Array.isArray(parsed)){
+        parsed.forEach(v=>{
+          let n=typeof v==='string'?v:(v.nom||v.name||v.raison||'');
+          if(n&&n.trim()) names.push(n.trim());
+        });
+      }
+    }catch(e){}
+  });
+  for(let k of Object.keys(localStorage)){
+    if(k.toLowerCase().includes(keyword) && !clesCibles.includes(k)){
+      try{
+        let parsed=JSON.parse(localStorage.getItem(k)||'[]');
+        if(Array.isArray(parsed)){
+          parsed.forEach(v=>{
+            let n=typeof v==='string'?v:(v.nom||v.name||v.raison||'');
+            if(n&&n.trim()) names.push(n.trim());
+          });
+        }
+      }catch(e){}
+    }
+  }
+  if(keyword.toLowerCase().includes('fournis')){
+    try{
+      let prods=JSON.parse(localStorage.getItem('dubenzen_produits')||'[]');
+      prods.forEach(p=>{ let n=(p.fournisseur||'').trim(); if(n) names.push(n); });
+    }catch(e){}
+  }
+  let seen={}; let uniques=[];
+  names.forEach(n=>{ let key=n.toLowerCase().trim(); if(!seen[key]){ seen[key]=true; uniques.push(n); } });
+  uniques.sort((a,b)=>a.localeCompare(b));
+  return uniques;
+}
+function loadSel(){
+  allFour=getNamesByKeyword('fournis');
+  allCat=getNamesByKeyword('categor');
+  allCond=getNamesByKeyword('conditionnement');
+  if(allCat.length===0) allCat=['Pharma','Carburant','Lubrifiant','Cosmétique','Alimentaire'];
+  if(allCond.length===0) allCond=['Boîte','Flacon','Plaquette','Bidon','Sachet','Pièce','Carton','Tube','Ampoule'];
+  document.getElementById('info-four').textContent=allFour.length?`✅ ${allFour.length} fournisseurs trouvés - Clique pour voir TOUT`:'⚠️ Aucun fournisseur - Va dans Fournisseurs pour ajouter';
+  document.getElementById('info-cond').textContent=`✅ ${allCond.length} conditionnements`;
+  renderList('cat',allCat);
+  renderList('cond',allCond);
+  renderFourList(allFour);
+  if(prod.fournisseur) f_fournisseur.value=prod.fournisseur;
+  if(prod.categorie) f_cat.value=prod.categorie;
+  if(prod.conditionnement) f_conditionnement.value=prod.conditionnement;
+}
+// ★★★ NOUVEAU SYSTEME FOURNISSEUR : NON MODIFIABLE, CLIC = LISTE ★★★
+function openFour(){
+  document.querySelectorAll('.drop-list').forEach(d=>d.classList.remove('show'));
+  let searchEl=document.getElementById('search-four');
+  if(searchEl) searchEl.value='';
+  renderFourList(allFour);
+  document.getElementById('list-four').classList.add('show');
+  setTimeout(()=>{ if(searchEl) searchEl.focus(); },100);
+}
+function renderFourList(list){
+  let div=document.getElementById('list-four-items');
+  if(!div) return;
+  if(!list.length){ div.innerHTML=`<div class="drop-empty">Aucun fournisseur trouvé</div>`; return; }
+  div.innerHTML=list.map(n=>`<div class="drop-item" onclick="selectFour('${n.replace(/'/g,"\\'")}')">👥 ${n}</div>`).join('');
+}
+function filterFourFromSearch(){
+  let q=(document.getElementById('search-four').value||'').toLowerCase().trim();
+  if(!q){ renderFourList(allFour); return; }
+  let filtered=allFour.filter(n=>n.toLowerCase().includes(q));
+  renderFourList(filtered);
+}
+function selectFour(val){
+  f_fournisseur.value=val;
+  document.getElementById('list-four').classList.remove('show');
+}
+function renderList(type,list){
+  let idEl=type==='cat'?'list-cat':'list-cond';
+  let div=document.getElementById(idEl);
+  if(!list.length){div.innerHTML=`<div class="drop-empty">Aucun - tape nouveau</div>`;return}
+  div.innerHTML=list.map(n=>`<div class="drop-item" onclick="selectItem('${type}','${n.replace(/'/g,"\\'")}')">${n}</div>`).join('');
+}
+function filterList(type){
+  let input=type==='cat'?f_cat:f_conditionnement;
+  let all=type==='cat'?allCat:allCond;
+  let q=input.value.toLowerCase();
+  let filtered=q?all.filter(n=>n.toLowerCase().includes(q)):all;
+  if(q&&input.value.trim()&&!all.includes(input.value.trim())){filtered=[input.value.trim()+' (nouveau)',...filtered];}
+  renderList(type,filtered);showList(type);
+}
+function showList(type){document.querySelectorAll('.drop-list').forEach(d=>d.classList.remove('show'));let idEl=type==='cat'?'list-cat':'list-cond';document.getElementById(idEl).classList.add('show');}
+function selectItem(type,val){let clean=val.replace(' (nouveau)','');if(type==='cat')f_cat.value=clean;else f_conditionnement.value=clean;document.querySelectorAll('.drop-list').forEach(d=>d.classList.remove('show'));}
+document.addEventListener('click',(e)=>{
+  if(!e.target.closest('.wrapper')) document.querySelectorAll('.drop-list').forEach(d=>d.classList.remove('show'));
+  if(e.target.closest('#list-four')) e.stopPropagation();
+});
+document.getElementById('list-four').addEventListener('click',(e)=>{ e.stopPropagation(); });
+function loadDetail(){
+  let all=getAll();
+  let found=all.find(p=>String(p.id)===String(id));
+  if(!found){
+    try{
+      let sp=JSON.parse(localStorage.getItem('dub_sites_produits')||'{}');
+      for(let k of Object.keys(sp)){ let f2=(sp[k]||[]).find(p=>String(p.id)===String(id)); if(f2){ found=f2; break; } }
+    }catch(e){}
+  }
+  prod=found||{id:id,nom:'Produit',pa:0,stock:0,site:"Dépôt"};
+  oldNom=prod.nom||''; oldFournisseur=prod.fournisseur||''; oldLot=prod.lot||''; oldPeremption=prod.peremption||'';
+  title.textContent=prod.nom||'Produit';f_nom.value=prod.nom||'';f_code.value=prod.code||'';f_barcode.value=prod.barcode||'';f_statut.value=prod.statut||'Disponible';f_contact_fourn.value=prod.contact_fourn||'';f_contenance.value=prod.contenance||1;f_emplacement.value=prod.emplacement||'';f_lot.value=prod.lot||'';f_devise.value=prod.devise||'CDF';f_stock.value=prod.stock||0;f_stock_min.value=prod.stock_min||5;f_stock_max.value=prod.stock_max||100;f_alerte.value=prod.alerte||5;f_peremption.value=prod.peremption||'';f_pa.value=prod.pa||prod.pau||0;
+  document.getElementById('f_unite_vente').value = prod.unite_vente || prod.unite_stock || 'PLQ';
+  document.getElementById('f_unite_achat').value = prod.unite_achat || prod.conditionnement || 'BT';
+  loadSel();applyRoleUI();upd();
+}
+f_stock.addEventListener('input',upd);f_peremption.addEventListener('change',upd);f_pa.addEventListener('input',upd);f_alerte.addEventListener('input',upd);f_stock_max.addEventListener('input',upd);f_contenance.addEventListener('input',upd);
+document.getElementById('f_unite_vente').addEventListener('change',upd);
+document.getElementById('f_unite_achat').addEventListener('change',upd);
+function saveAll(){
+ let paOriginal=prod.pa||0; let paSaisi=+f_pa.value||0;
+ let stock=+f_stock.value||0; let pat=paSaisi*stock;
+ let uniteVente=document.getElementById('f_unite_vente').value||'PLQ';
+ let uniteAchat=document.getElementById('f_unite_achat').value||'BT';
+ let cont=+f_contenance.value||1;
+ if(uniteVente===uniteAchat) cont=1;
+ let besoinVente=Math.max(0,(+f_stock_max.value||0)-stock);
+ let a_commander = stock <= (+f_alerte.value||0) ? Math.ceil(besoinVente/cont) : 0;
+ let data={id:id,nom:f_nom.value.trim(),code:f_code.value,barcode:f_barcode.value,categorie:f_cat.value.trim(),statut:f_statut.value,fournisseur:f_fournisseur.value.trim(),contact_fourn:f_contact_fourn.value,contenance:cont,unite_vente:uniteVente,unite_achat:uniteAchat,unite_stock:uniteVente,conditionnement:uniteAchat,site:"Dépôt",site_nom:"Dépôt Central",emplacement:f_emplacement.value,lot:f_lot.value,devise:f_devise.value,stock:stock,stock_min:+f_stock_min.value||0,stock_max:+f_stock_max.value||0,alerte:+f_alerte.value||0,peremption:f_peremption.value,pa:doitCacherPA()?paOriginal:paSaisi,pau:doitCacherPA()?paOriginal:paSaisi,pat:pat,a_commander:a_commander,besoin_vente:besoinVente,pv:0,prix:0,marge:0,margin:0,margePropre:false};
+ if(!data.nom)return alert('Nom obligatoire Boss'); if(!data.fournisseur)return alert('Fournisseur obligatoire Boss - Clique et choisis dans la liste'); if(!doitCacherPA()&&(!data.pa||data.pa<=0))return alert('⛔ PA obligatoire - Dépôt = PA seulement');
+ if(data.fournisseur && !allFour.includes(data.fournisseur)){
+   ['dub_fournisseurs','dubenzen_fournisseurs'].forEach(k=>{
+     let cur=JSON.parse(localStorage.getItem(k)||'[]');
+     cur.push({id:Date.now(), nom:data.fournisseur, tel:''});
+     localStorage.setItem(k, JSON.stringify(cur));
+   });
+   allFour.push(data.fournisseur);
+ }
+ if(data.categorie&&!allCat.includes(data.categorie)){let cur=JSON.parse(localStorage.getItem('dub_categories')||'[]');cur.push({nom:data.categorie});localStorage.setItem('dub_categories',JSON.stringify(cur));}
+ if(data.conditionnement&&!allCond.includes(data.conditionnement)){let cur=JSON.parse(localStorage.getItem('dub_conditionnements')||'[]');cur.push({nom:data.conditionnement});localStorage.setItem('dub_conditionnements',JSON.stringify(cur));}
+ let all=getAll();let i=all.findIndex(p=>String(p.id)===String(id));if(i>=0)all[i]={...all[i],...data};else all.push(data);localStorage.setItem(KEY,JSON.stringify(all));localStorage.setItem('produits',JSON.stringify(all));localStorage.setItem('dub_produits',JSON.stringify(all));
+ syncPartout(data);
+ prod={...prod,...data};
+ oldNom=data.nom; oldFournisseur=data.fournisseur; oldLot=data.lot; oldPeremption=data.peremption;
+ title.textContent=data.nom;msg.textContent=`✅ ${data.fournisseur} - PAU ${data.pa.toLocaleString()} - PAT ${pat.toLocaleString()} - À COMMANDER: ${a_commander} ${uniteAchat} (= ${besoinVente} ${uniteVente}) - ENREGISTRÉ`;msg.style.color='#22c55e';applyRoleUI();upd();
+}
+function syncPartout(produit){
+  localStorage.setItem('dub_prix_last_sync',JSON.stringify({id:produit.id,nom:produit.nom,pa:produit.pa,date:Date.now()}));
+  try{
+    let sp=JSON.parse(localStorage.getItem('dub_sites_produits')||'{}');
+    let sites=JSON.parse(localStorage.getItem('dub_sites')||'[]');
+    let oldKey = normKey(oldNom)+'|'+normKey(oldFournisseur)+'|'+normKey(oldLot)+'|'+(oldPeremption||'').toString().trim();
+    let newKey = cleProduit(produit);
+    let changedSp=false;
+    Object.keys(sp).forEach(siteId=>{
+      let list=sp[siteId]||[];
+      let siteObj=sites.find(s=>String(s.id)===String(siteId));
+      let margeSite=siteObj?(+siteObj.margeDefaut||+siteObj.marge||0):0;
+      list.forEach(item=>{
+        let itemId=item.originalId||item.produitId||item.id;
+        let meme = String(itemId)===String(produit.id) || cleProduit(item)===oldKey || cleProduit(item)===newKey;
+        if(!meme && item.nom && oldNom && item.nom.toLowerCase().trim()===oldNom.toLowerCase().trim()) meme=true;
+        if(meme){
+          item.nom=produit.nom; item.fournisseur=produit.fournisseur; item.categorie=produit.categorie; item.lot=produit.lot; item.peremption=produit.peremption; item.conditionnement=produit.conditionnement; item.contenance=produit.contenance; item.unite_vente=produit.unite_vente; item.unite_achat=produit.unite_achat; item.unite_stock=produit.unite_vente; item.barcode=produit.barcode; item.code=produit.code; item.devise=produit.devise;
+          item.pa=produit.pa; item.prixAchat=produit.pa;
+          let margeAUtiliser=item.margePropre?(+item.marge||0):(margeSite||+item.marge||0);
+          if(margeAUtiliser>0){ item.marge=margeAUtiliser; item.pv=Math.round(produit.pa*(1+margeAUtiliser/100)); item.prix=item.pv; }
+          item.stock_alerte=produit.alerte; item.alerte=produit.alerte; item.stock_max=produit.stock_max;
+          changedSp=true;
+        }
+      });
+    });
+    if(changedSp) localStorage.setItem('dub_sites_produits', JSON.stringify(sp));
+  }catch(e){ console.error(e); }
+}
+function syncPA(produit){ syncPartout(produit); }
+function goBack(){let retour=sessionStorage.getItem('dub_return_page')||"/central/produits.html";try{let iframe=window.parent.document.querySelector('iframe');if(iframe){iframe.src=retour;return;}}catch(e){}location.href=retour;}
+loadDetail();
+</script>
+</body>
+</html>

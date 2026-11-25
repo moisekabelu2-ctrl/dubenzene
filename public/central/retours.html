@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DUBENZENE - Tous les Retours</title>
+<style>
+*{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,sans-serif;background:#f5f5f7;padding:18px}
+.card{background:#fff;border-radius:16px;padding:16px;box-shadow:0 2px 10px rgba(0,0,0,0.05);margin-bottom:14px}
+.input{width:100%;padding:12px;border-radius:12px;border:1px solid #e5e7eb;font-size:14px;outline:none}
+.input:focus{border-color:#f59e0b}
+h2{margin:0}
+.btn{padding:12px 16px;border-radius:12px;border:none;font-weight:800;cursor:pointer;font-size:13px}
+.tab{padding:10px 14px;border-radius:20px;border:1px solid #e5e7eb;background:#fff;font-weight:800;font-size:12px;cursor:pointer}
+.tab.active{background:#0a0e1a;color:#fff;border-color:#0a0e1a}
+.tab.active-gerant{background:#f59e0b;color:#000;border-color:#f59e0b}
+.tab.active-vendeur{background:#3b82f6;color:#fff;border-color:#3b82f6}
+</style>
+</head>
+<body>
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+    <div><h2>↩ Tous les Retours</h2><small style="color:#94a3b8">Admin - Gérants + Vendeurs, tout au même endroit</small></div>
+    <button onclick="renderRetoursAdmin()" class="btn" style="background:#0a0e1a;color:#fff">🔄 Actualiser</button>
+  </div>
+
+  <!-- ===== CODE DU JOUR ===== -->
+  <div style="background:#fffbeb;border:1px solid #f59e0b;border-radius:14px;padding:16px;margin-top:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+      <div>
+        <div style="font-size:12px;color:#92400e;font-weight:700">🔐 CODE RETOUR DU JOUR - CHANGE TOUT SEUL À MINUIT</div>
+        <div id="txtCodeRetourActuel" style="font-size:36px;font-weight:900;letter-spacing:6px;color:#000">....</div>
+        <div style="font-size:12px;color:#94a3b8">Valable le : <b id="txtDateCode" style="color:#000">...</b> • Même code pour Gérants + Vendeurs</div>
+      </div>
+      <button onclick="genererCodeManuel()" class="btn" style="background:#f59e0b;color:#000">🎲 CHANGER MANUELLEMENT</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <input id="inputNouveauCodeRetour" class="input" inputmode="numeric" placeholder="Ou tape ton propre code ex : 7788" style="flex:1;margin:0">
+      <button onclick="changerCodeRetourAdmin()" class="btn" style="background:#0a0e1a;color:#fff;white-space:nowrap">CHANGER</button>
+    </div>
+  </div>
+
+  <!-- ===== STATS : GÉRANTS + VENDEURS ===== -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:14px">
+    <div style="background:#0f172a;border-radius:14px;padding:14px;text-align:center"><div style="font-size:11px;color:#94a3b8">TOTAL RETOURS</div><b id="totalNbRetours" style="color:white;font-size:22px">0</b></div>
+    <div style="background:#fff7ed;border:1px solid #f59e0b;border-radius:14px;padding:14px;text-align:center"><div style="font-size:11px;color:#92400e">RETOURS GÉRANTS</div><b id="totalGerants" style="color:#000;font-size:22px">0</b></div>
+    <div style="background:#eff6ff;border:1px solid #3b82f6;border-radius:14px;padding:14px;text-align:center"><div style="font-size:11px;color:#1d4ed8">RETOURS VENDEURS</div><b id="totalVendeurs" style="color:#000;font-size:22px">0</b></div>
+  </div>
+  <div style="background:#0f172a;border-radius:14px;padding:14px;text-align:center;margin-top:10px"><div style="font-size:11px;color:#94a3b8">TOTAL REMBOURSÉ (Gérants + Vendeurs)</div><b id="totalMontantRetours" style="color:#f59e0b;font-size:22px">0 FC</b></div>
+
+  <!-- ===== FILTRES : TOUS / GÉRANTS / VENDEURS ===== -->
+  <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+    <button id="tabTous" onclick="setFiltreRetour('tous')" class="tab active">📋 TOUS</button>
+    <button id="tabGerant" onclick="setFiltreRetour('gerant')" class="tab">🏪 GÉRANTS</button>
+    <button id="tabVendeur" onclick="setFiltreRetour('vendeur')" class="tab">🧑‍💼 VENDEURS</button>
+  </div>
+
+  <input id="searchRetourAdmin" class="input" placeholder="🔍 Client, produit, gérant / vendeur, N° vente..." oninput="renderRetoursAdmin()" style="margin-top:14px">
+  <div id="listRetoursAdmin" style="margin-top:12px"></div>
+</div>
+
+<script>
+let filtreActuel = 'tous';
+function toast(msg, type){
+  var t = document.createElement('div');
+  t.innerText = msg;
+  t.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);background:'+(type==='err'?'#ef4444':'#22c55e')+';color:#fff;padding:12px 18px;border-radius:12px;font-weight:800;z-index:9999;font-size:13px';
+  document.body.appendChild(t); setTimeout(function(){ t.remove(); }, 2500);
+}
+function setFiltreRetour(f){
+  filtreActuel = f;
+  document.getElementById('tabTous').className = 'tab' + (f==='tous'?' active':'');
+  document.getElementById('tabGerant').className = 'tab' + (f==='gerant'?' active-gerant':'');
+  document.getElementById('tabVendeur').className = 'tab' + (f==='vendeur'?' active-vendeur':'');
+  renderRetoursAdmin();
+}
+
+// ===== CODE DU JOUR =====
+function getDateAujourdhui(){
+  var d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function getCodeRetourDuJour(){
+  var auj = getDateAujourdhui();
+  var dateStockee = localStorage.getItem('dub_code_retour_date');
+  var codeStocke = localStorage.getItem('dub_code_retour_admin');
+  if(dateStockee !== auj || !codeStocke){
+    var nouveauCode = Math.floor(1000 + Math.random() * 9000).toString();
+    localStorage.setItem('dub_code_retour_admin', nouveauCode);
+    localStorage.setItem('dub_code_retour_date', auj);
+    return nouveauCode;
+  }
+  return codeStocke;
+}
+function afficherCodeRetourActuel(){
+  var code = getCodeRetourDuJour();
+  var el = document.getElementById('txtCodeRetourActuel');
+  if(el) el.innerText = code;
+  var dEl = document.getElementById('txtDateCode');
+  if(dEl) dEl.innerText = new Date().toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+  return code;
+}
+function genererCodeManuel(){
+  var nouveauCode = Math.floor(1000 + Math.random() * 9000).toString();
+  localStorage.setItem('dub_code_retour_admin', nouveauCode);
+  localStorage.setItem('dub_code_retour_date', getDateAujourdhui());
+  afficherCodeRetourActuel();
+  toast('Nouveau CODE : ' + nouveauCode);
+}
+function changerCodeRetourAdmin(){
+  var inp = document.getElementById('inputNouveauCodeRetour');
+  var code = inp ? inp.value.trim() : '';
+  if(!code || code.length < 4){ toast('Mets un code de 4 chiffres minimum','err'); return; }
+  localStorage.setItem('dub_code_retour_admin', code);
+  localStorage.setItem('dub_code_retour_date', getDateAujourdhui());
+  if(inp) inp.value = '';
+  afficherCodeRetourActuel();
+  toast('Nouveau CODE : ' + code);
+}
+
+// ===== LISTE : GÉRANTS + VENDEURS =====
+function renderRetoursAdmin(){
+  var el = document.getElementById('listRetoursAdmin');
+  if(!el) return;
+  var retours = [];
+  try{ retours = JSON.parse(localStorage.getItem('dub_retours')||'[]'); }catch(e){}
+
+  // Stats globales
+  var nbGerants = retours.filter(function(r){ return (r.typePersonne||r.role||'gerant')==='gerant'; }).length;
+  var nbVendeurs = retours.filter(function(r){ return (r.typePersonne||r.role||'gerant')==='vendeur'; }).length;
+  document.getElementById('totalGerants').innerText = nbGerants;
+  document.getElementById('totalVendeurs').innerText = nbVendeurs;
+
+  // Filtre par onglet
+  var filtres = retours;
+  if(filtreActuel !== 'tous'){
+    filtres = retours.filter(function(r){
+      var type = (r.typePersonne||r.role||'gerant').toLowerCase();
+      return type === filtreActuel;
+    });
+  }
+  // Recherche
+  var q = document.getElementById('searchRetourAdmin') ? document.getElementById('searchRetourAdmin').value.toLowerCase().trim() : '';
+  if(q){
+    filtres = filtres.filter(function(r){
+      var txt = ((r.client||'')+' '+(r.gerant||r.vendeur||r.nomPersonne||'')+' '+(r.venteNum||'')+' '+(r.motif||'')+' '+(r.siteId||'')+' '+(r.articles||[]).map(function(a){return a.nom}).join(' ')).toLowerCase();
+      return txt.indexOf(q) >= 0;
+    });
+  }
+  var totalMontant = filtres.reduce(function(s,r){ return s + Number(r.totalRembourse||0); }, 0);
+  document.getElementById('totalNbRetours').innerText = filtres.length;
+  document.getElementById('totalMontantRetours').innerText = totalMontant.toLocaleString() + ' FC';
+
+  if(!filtres.length){
+    var label = filtreActuel==='gerant' ? 'Aucun retour de gérant' : filtreActuel==='vendeur' ? 'Aucun retour de vendeur' : 'Aucun retour pour le moment';
+    el.innerHTML = '<div style="color:#94a3b8;text-align:center;padding:20px">'+label+'</div>'; return;
+  }
+  el.innerHTML = filtres.map(function(r){
+    var type = (r.typePersonne||r.role||'gerant').toLowerCase();
+    var isVendeur = type === 'vendeur';
+    var badge = isVendeur ? '<span style="background:#3b82f6;color:#fff;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:800">VENDEUR</span>' : '<span style="background:#f59e0b;color:#000;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:800">GÉRANT</span>';
+    var nomPersonne = r.gerant || r.vendeur || r.nomPersonne || 'Inconnu';
+    var arts = (r.articles||[]).map(function(a){ return a.nom+' x'+a.qte; }).join(', ');
+    var date = r.date ? new Date(r.date).toLocaleString('fr-FR') : '';
+    var bord = isVendeur ? '#3b82f6' : '#f59e0b';
+    return '<div style="background:#fff;border:1px solid '+bord+';border-radius:14px;padding:12px;margin-bottom:10px">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center"><b>'+(r.venteNum||r.id)+'</b><div style="display:flex;gap:6px;align-items:center">'+badge+'<b style="color:#d97706">'+Number(r.totalRembourse||0).toLocaleString()+' FC</b></div></div>'
+      + '<div style="font-size:11px;color:#94a3b8">'+(r.client||'')+' - '+(isVendeur?'Vendeur':'Gérant')+' : '+nomPersonne+' - '+(r.siteId||'')+' - '+date+'</div>'
+      + '<div style="font-size:13px;margin:6px 0">'+arts+'</div>'
+      + '<div style="font-size:11px;color:#d97706">Motif : '+(r.motif||'-')+' | '+(r.validation||'')+'</div>'
+      + '</div>';
+  }).join('');
+}
+afficherCodeRetourActuel();
+renderRetoursAdmin();
+setInterval(afficherCodeRetourActuel, 60000);
+</script>
+</body>
+</html>

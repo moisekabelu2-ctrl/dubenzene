@@ -1,0 +1,10 @@
+<script>
+// Après login, tu as déjà enregistré l'utilisateur
+let user = JSON.parse(localStorage.getItem('user') || '{}');
+
+if(user.role === 'gerant'){
+  window.location.href = 'gerant/index.html';
+} else {
+  window.location.href = 'vendeur/index.html';
+}
+</script>

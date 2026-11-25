@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DUBENZENE Central - OFFLINE</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;display:flex;height:100vh;overflow:hidden;font-family:Inter,system-ui,sans-serif;background:#0a0e1a}
+.sidebar{width:280px;background:#0a0e1a;flex-shrink:0;display:flex;flex-direction:column;border-right:1px solid #1e2435}
+.header{padding:24px;border-bottom:1px solid #1e2435;display:flex;gap:12px;align-items:center}
+.logo{width:36px;height:36px;background:#facc15;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;color:#000}
+.live{margin-left:auto;background:#1a2300;color:#a3e635;font-size:9px;padding:3px 7px;border-radius:20px;border:1px solid #2a3a00;font-weight:700}
+.menu{flex:1;padding:14px;overflow:auto}
+.menu-title{color:#3a415c;font-size:10px;font-weight:700;letter-spacing:1px;margin:8px 12px 12px}
+.menu-item{padding:11px 14px;border-radius:12px;cursor:pointer;margin-bottom:6px;font-size:13px;display:flex;gap:10px;align-items:center;transition:0.2s;user-select:none}
+.menu-item.active{background:#facc15;color:#000;font-weight:700}
+.menu-item.inactive{color:#8a8fa3;font-weight:500}
+.menu-item.inactive:hover{background:#12172a;color:#fff}
+.menu-item svg{width:18px;height:18px}
+.badge{margin-left:auto;background:#ff3b30;color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;font-weight:700}
+.bottom{padding:14px;border-top:1px solid #1e2435;display:flex;flex-direction:column;gap:10px}
+.user-card{background:#12172a;border:1px solid #1e2435;border-radius:12px;padding:12px;display:flex;gap:10px;align-items:center}
+.avatar{width:32px;height:32px;background:#facc15;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px}
+.btn-logout{width:100%;padding:11px 14px;background:#1a1010;border:1px solid #ff3b30;border-radius:12px;color:#ff6b6b;font-size:13px;font-weight:700;display:flex;gap:10px;align-items:center;justify-content:center;cursor:pointer}
+.btn-logout:hover{background:#ff3b30;color:#fff}
+.main{flex:1;background:#f5f5f7;overflow:hidden;display:flex;flex-direction:column}
+iframe{width:100%;height:100%;border:0;background:#f5f5f7}
+.offline-bar{position:fixed;bottom:10px;right:10px;background:#0a0e1a;color:#a3e635;border:1px solid #2a3a00;padding:6px 12px;border-radius:20px;font-size:11px;display:none;z-index:9999}
+</style>
+</head>
+<body>
+<div class="sidebar">
+  <div class="header">
+    <div class="logo">D</div>
+    <div><div style="color:#fff;font-weight:800;font-size:13px">DUBENZENE</div><div style="color:#5a6080;font-size:10px;font-weight:600">CENTRAL • BUKAVU</div></div>
+    <div class="live">LIVE</div>
+  </div>
+  <div class="menu">
+    <div class="menu-title">MENU CENTRAL</div>
+    <div id="m1" onclick="go('index.html','m1')" class="menu-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> Dashboard</div>
+    <div id="m2" onclick="go('produits.html','m2')" class="menu-item inactive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg> Produits</div>
+    <div id="m3" onclick="go('stock/stock.html','m3')" class="menu-item inactive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg> Stock</div>
+    <div id="m4" onclick="go('sites.html','m4')" class="menu-item inactive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Sites</div>
+    <div id="m5" onclick="go('ventes.html','m5')" class="menu-item inactive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Ventes</div>
+    <!-- ===== RETOURS JUSTE APRES VENTES ===== -->
+    <div id="m10" onclick="go('retours.html','m10')" class="menu-item inactive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg> Retours <span class="badge" id="badgeRetoursMenu" style="display:none;background:#f59e0b;color:#000">0</span></div>
+    <div id="m6" onclick="go('appros/index.html','m6')" class="menu-item inactive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> Appros</div>
+    <div id="m7" onclick="go('alertes.html','m7')" class="menu-item inactive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Alertes <span class="badge">3</span></div>
+    <div id="m8" onclick="go('utilisateurs.html','m8')" class="menu-item inactive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Utilisateurs</div>
+    <div id="m9" onclick="go('parametres.html','m9')" class="menu-item inactive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 9 15a1.65 1.65 0 0 0-1-1.51V13a2 2 0 0 1 4 0v.49c.38.23.8.39 1.27.47.46.08.93.08 1.39 0 .47-.08.89-.24 1.27-.47V13a2 2 0 0 1 4 0v.49a1.65 1.65 0 0 0-1 1.51z"/></svg> Paramètres</div>
+  </div>
+  <div class="bottom">
+    <div class="user-card">
+      <div class="avatar" id="avatarLetter">B</div>
+      <div><div style="color:#fff;font-size:12px;font-weight:700" id="userName">Boss Bukavu</div><div style="color:#5a6080;font-size:10px" id="userRole">Admin Central</div></div>
+    </div>
+    <button id="btnLogout" type="button" class="btn-logout"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg> Déconnexion</button>
+  </div>
+</div>
+<div class="main"><iframe id="frame" src="index.html"></iframe></div>
+<div id="offline" class="offline-bar">● OFFLINE - Mode local actif</div>
+
+<script>
+// ===== SÉCURITÉ - SI PAS LOGGÉ => LOGIN =====
+(function checkAuth(){
+  if(!localStorage.getItem('dub_current_user_id') || localStorage.getItem('isLogged')!=='true'){
+    window.location.replace('login.html');
+  }
+})();
+
+// ===== MIGRATION STOCK =====
+if(localStorage.getItem('lastPage') === 'stock.html'){
+  localStorage.setItem('lastPage', 'stock/stock.html');
+  localStorage.setItem('lastId', 'm3');
+}
+
+function go(page,id){
+  if(page === 'stock.html') page = 'stock/stock.html';
+  const f=document.getElementById('frame');
+  f.src=page;
+  document.querySelectorAll('.menu-item').forEach(m=>{ m.classList.remove('active'); m.classList.add('inactive'); });
+  const active=document.getElementById(id);
+  if(active){active.classList.add('active'); active.classList.remove('inactive');}
+  localStorage.setItem('lastPage',page); 
+  localStorage.setItem('lastId',id);
+}
+
+// ===== BADGE RETOURS =====
+function updateBadgeRetours(){
+  try{
+    var retours = JSON.parse(localStorage.getItem('dub_retours')||'[]');
+    var b = document.getElementById('badgeRetoursMenu');
+    if(b){
+      if(retours.length > 0){ b.style.display='inline-block'; b.textContent = retours.length; }
+      else { b.style.display='none'; }
+    }
+  }catch(e){}
+}
+setInterval(updateBadgeRetours, 3000);
+updateBadgeRetours();
+
+// ===== LOGOUT =====
+function doLogout(){
+  try{
+    localStorage.removeItem('dub_current_user_id');
+    localStorage.removeItem('isLogged');
+    localStorage.removeItem('user');
+    localStorage.removeItem('lastPage');
+    localStorage.removeItem('lastId');
+  }catch(e){}
+  window.location.href = 'login.html';
+  setTimeout(()=>{ window.location.replace('login.html'); },100);
+  setTimeout(()=>{ window.top.location.href = 'login.html'; },200);
+}
+document.getElementById('btnLogout').addEventListener('click', doLogout);
+window.logout = doLogout;
+
+// Infos user
+try{
+  const u=JSON.parse(localStorage.getItem('user')||'{}');
+  const n=u.nom||u.username||u.name||'Boss';
+  const r=u.role ? (u.role.toUpperCase() + (u.siteName ? ' • '+u.siteName : '')) : 'Admin Central';
+  document.getElementById('userName').textContent=n;
+  document.getElementById('userRole').textContent=r;
+  document.getElementById('avatarLetter').textContent=n.charAt(0).toUpperCase();
+  const lp=localStorage.getItem('lastPage'); const li=localStorage.getItem('lastId');
+  if(lp && li && lp!=='login.html'){ go(lp,li); }
+}catch(e){}
+
+if(!navigator.onLine){ document.getElementById('offline').style.display='block'; }
+window.addEventListener('online',()=>{ document.getElementById('offline').style.display='none'; });
+window.addEventListener('offline',()=>{ document.getElementById('offline').style.display='block'; });
+</script>
+</body>
+</html>

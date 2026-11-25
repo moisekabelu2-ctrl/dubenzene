@@ -1,0 +1,8 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Commande</title><script src="https://cdn.tailwindcss.com"></script></head>
+<body class="bg-slate-50 p-6"><div class="max-w-4xl mx-auto"><h2 class="font-bold text-xl mb-4">⚠️ Stock Bas - Dépôt & Sites</h2><div id="list" class="space-y-2"></div><a href="index.html" class="inline-block mt-6 bg-white border px-4 py-2 rounded-xl">← Menu</a></div>
+<script>
+let d=JSON.parse(localStorage.getItem('dub_depot_produits')||localStorage.getItem('pharma_stock')||'[]');
+let seuil=20;
+let bas=d.filter(p=>(p.qte||p.stock||0)<=seuil);
+document.getElementById('list').innerHTML=bas.length?bas.map(p=>`<div class="bg-white p-4 rounded-xl border flex justify-between"><div><b>${p.nom||p.name}</b> - Lot ${p.lot}</div><div class="text-red-600 font-bold">${p.qte||p.stock} restant</div></div>`).join(''):'<div class="bg-green-50 p-6 rounded-xl text-center">✅ Tout est ok, aucun stock bas</div>';
+</script></body></html>

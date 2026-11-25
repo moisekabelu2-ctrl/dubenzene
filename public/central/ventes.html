@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ventes par Site - Dubenzene</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Inter,Arial;background:#0f1115;color:#fff;padding:14px}
+.header{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+h2{margin:0}.sub{color:#8a8fa8;font-size:12px}
+.kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+@media(max-width:700px){.kpi{grid-template-columns:1fr 1fr}}
+.k{background:#171a23;border:1px solid #222735;border-radius:14px;padding:12px;text-align:center}
+.k b{font-size:18px;display:block}
+.k small{color:#8a8fa8}
+.sites-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin-bottom:14px}
+.site-card{background:#171a23;border:2px solid #222735;border-radius:14px;padding:12px;cursor:pointer}
+.site-card.active{border-color:#facc15;background:rgba(250,204,21,.08)}
+.site-card b{font-size:15px}
+.site-card .big{font-size:18px;font-weight:900;color:#22c55e}
+.site-card .small{font-size:11px;color:#8a8fa8}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+select,input{background:#171a23;border:1px solid #222735;color:#fff;padding:10px;border-radius:10px;outline:none}
+.card{background:#171a23;border:1px solid #222735;border-radius:14px;padding:12px;margin-bottom:8px}
+.row{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid #1f2438}
+.btn{padding:8px 12px;border-radius:8px;border:0;font-weight:800;cursor:pointer;font-size:11px}
+.btn-red{background:rgba(239,68,68,.15);color:#f87171}
+.btn-green{background:#22c55e;color:#000}
+.btn-yellow{background:#facc15;color:#000}
+.btn-dark{background:#171a23;color:#fff;border:1px solid #222735}
+.badge{padding:3px 8px;border-radius:99px;font-size:11px;font-weight:800}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.tab{padding:8px 14px;border-radius:999px;border:1px solid #222735;background:#171a23;color:#fff;font-weight:800;cursor:pointer;font-size:12px}
+.tab.active{background:#facc15;color:#000}
+</style>
+</head>
+<body>
+<div class="header">
+  <div><h2>📜 Ventes par Site</h2><div class="sub">Admin - Tu vois les ventes de tous les sites, tu filtres par site</div></div>
+  <div style="display:flex;gap:8px"><button onclick="location.href='sites.html'" class="btn btn-yellow">← Sites</button><button onclick="exportExcel()" class="btn btn-green">📥 Export Excel</button></div>
+</div>
+
+<!-- ✅ KPI GLOBAL -->
+<div class="kpi">
+  <div class="k"><b id="kTotalPV">0 CDF</b><small>Total Vendu (PV) - Tous sites</small></div>
+  <div class="k"><b id="kBenef" style="color:#22c55e">0 CDF</b><small>Bénéfice Total (PV - PA)</small></div>
+  <div class="k"><b id="kNb">0</b><small>Nombre Ventes</small></div>
+  <div class="k"><b id="kQte">0</b><small>Quantité Vendue</small></div>
+</div>
+
+<!-- ✅ 1. VENTES PAR SITE - Cartes cliquables -->
+<h3 style="margin:8px 0">🏢 Ventes par Site - Clique sur un site pour filtrer</h3>
+<div id="sitesGrid" class="sites-grid"></div>
+
+<!-- ✅ 2. FILTRES -->
+<div class="filters">
+  <select id="fSite" onchange="setSite(this.value)"><option value="">Tous les sites</option></select>
+  <select id="fVendeuse" onchange="render()"><option value="">Toutes les vendeuses</option></select>
+  <select id="fPeriode" onchange="render()">
+    <option value="today">Aujourd'hui</option>
+    <option value="7">7 derniers jours</option>
+    <option value="30">30 derniers jours</option>
+    <option value="all">Tout</option>
+  </select>
+  <input id="fSearch" placeholder="🔍 Chercher produit..." oninput="render()" style="flex:1;min-width:160px">
+  <button onclick="resetFiltres()" class="btn btn-dark">↺ Reset</button>
+</div>
+
+<!-- ✅ 3. ONGLETS : Détail / Par Vendeuse / Par Produit -->
+<div class="tabs">
+  <button id="tabDetail" class="tab active" onclick="setOnglet('detail')">📜 Détail des ventes</button>
+  <button id="tabVendeuse" class="tab" onclick="setOnglet('vendeuse')">👩‍💼 Par Vendeuse</button>
+  <button id="tabProduit" class="tab" onclick="setOnglet('produit')">📦 Par Produit</button>
+</div>
+
+<div id="list"></div>
+
+<script>
+let filtreSite = '';
+let onglet = 'detail';
+
+function getVentes(){ try{return JSON.parse(localStorage.getItem('dub_ventes')||'[]')}catch(e){return []} }
+function getSites(){ try{return JSON.parse(localStorage.getItem('dub_sites')||'[]')}catch(e){return []} }
+function getUsers(){ try{return JSON.parse(localStorage.getItem('dub_users')||'[]')}catch(e){return []} }
+function getSiteProds(){ try{return JSON.parse(localStorage.getItem('dub_sites_produits')||'{}')}catch(e){return {}} }
+
+let sites = getSites();
+
+// Remplir filtre Site
+document.getElementById('fSite').innerHTML = '<option value="">Tous les sites</option>' + sites.map(s=>`<option value="${s.id}">${s.nom}</option>`).join('');
+let vendeuses = getUsers().filter(u=>u.role==='vendeur' || u.role==='vendeuse');
+document.getElementById('fVendeuse').innerHTML = '<option value="">Toutes les vendeuses</option>' + vendeuses.map(u=>`<option value="${u.nom}">${u.nom}</option>`).join('');
+
+// ✅ Montants : toujours en PV pour l'affichage, PA juste pour bénéfice
+function montantPV(v){ if(v.valeurPV) return +v.valeurPV; if(v.pv) return +v.pv * (+v.qte||0); if(v.valeur && v.pv && v.pa) return +v.qte * +v.pv; return +v.valeur||0; }
+function montantPA(v){ if(v.valeur) return +v.valeur; if(v.pa) return +v.pa * (+v.qte||0); return 0; }
+function nomSite(id, fallback){
+  let s = sites.find(x=>String(x.id)===String(id));
+  if(s) return s.nom;
+  if(fallback) return fallback;
+  return id || '-';
+}
+function filtrerVentes(){
+  let all = getVentes();
+  let fV = document.getElementById('fVendeuse').value;
+  let fP = document.getElementById('fPeriode').value;
+  let fS = document.getElementById('fSearch').value.toLowerCase();
+  return all.filter(v=>{
+    if(filtreSite && String(v.siteId)!==String(filtreSite)) return false;
+    let nomV = v.vendeuseNom || v.vendeurNom || v.vendeuseId || '';
+    if(fV && nomV!==fV) return false;
+    if(fS && !(v.produit||'').toLowerCase().includes(fS)) return false;
+    if(fP==='today' && new Date(v.date).toDateString()!==new Date().toDateString()) return false;
+    if(fP==='7' && (Date.now() - new Date(v.date).getTime()) > 7*24*60*60*1000) return false;
+    if(fP==='30' && (Date.now() - new Date(v.date).getTime()) > 30*24*60*60*1000) return false;
+    return true;
+  });
+}
+function setSite(siteId){
+  filtreSite = siteId;
+  document.getElementById('fSite').value = siteId;
+  render();
+}
+function setOnglet(o){
+  onglet = o;
+  document.getElementById('tabDetail').classList.toggle('active', o==='detail');
+  document.getElementById('tabVendeuse').classList.toggle('active', o==='vendeuse');
+  document.getElementById('tabProduit').classList.toggle('active', o==='produit');
+  render();
+}
+function resetFiltres(){
+  filtreSite=''; document.getElementById('fSite').value=''; document.getElementById('fVendeuse').value=''; document.getElementById('fPeriode').value='today'; document.getElementById('fSearch').value=''; render();
+}
+
+function render(){
+  let list = filtrerVentes();
+  let all = getVentes();
+
+  // ✅ KPI GLOBAL pour le filtre actuel (site + période)
+  let totalPV = list.reduce((a,v)=>a+montantPV(v),0);
+  let totalPA = list.reduce((a,v)=>a+montantPA(v),0);
+  let totalQte = list.reduce((a,v)=>a+(+v.qte||0),0);
+  document.getElementById('kTotalPV').textContent = totalPV.toLocaleString()+' CDF';
+  document.getElementById('kBenef').textContent = (totalPV-totalPA).toLocaleString()+' CDF';
+  document.getElementById('kNb').textContent = list.length;
+  document.getElementById('kQte').textContent = totalQte;
+
+  // ✅ CARTES PAR SITE - toujours calculées sur la période choisie, pas sur le filtre site
+  let fP = document.getElementById('fPeriode').value;
+  let pourCartes = all.filter(v=>{
+    if(fP==='today' && new Date(v.date).toDateString()!==new Date().toDateString()) return false;
+    if(fP==='7' && (Date.now() - new Date(v.date).getTime()) > 7*24*60*60*1000) return false;
+    if(fP==='30' && (Date.now() - new Date(v.date).getTime()) > 30*24*60*60*1000) return false;
+    return true;
+  });
+  let parSite = {};
+  // On part de tous les sites créés, même ceux avec 0 vente
+  sites.forEach(s=>{ parSite[s.id]={nom:s.nom, pv:0, pa:0, nb:0, qte:0}; });
+  pourCartes.forEach(v=>{
+    let sid = v.siteId;
+    let nom = nomSite(sid, v.siteName);
+    if(!parSite[sid]) parSite[sid]={nom:nom, pv:0, pa:0, nb:0, qte:0};
+    parSite[sid].pv += montantPV(v);
+    parSite[sid].pa += montantPA(v);
+    parSite[sid].nb += 1;
+    parSite[sid].qte += (+v.qte||0);
+  });
+  // Si vente dans un site supprimé, on le garde quand même
+  document.getElementById('sitesGrid').innerHTML = Object.entries(parSite).map(([sid,d])=>`
+    <div class="site-card ${filtreSite===sid?'active':''}" onclick="setSite('${sid}')">
+      <div style="display:flex;justify-content:space-between"><b>🏢 ${d.nom}</b><span class="badge" style="background:${filtreSite===sid?'#facc15;color:#000':'#222735'}">${d.nb} ventes</span></div>
+      <div class="big" style="margin-top:8px">${d.pv.toLocaleString()} CDF</div>
+      <div class="small">Vendu (PV)</div>
+      <div style="display:flex;gap:10px;margin-top:6px;font-size:11px">
+        <span>Qté : <b style="color:#fff">${d.qte}</b></span>
+        <span>Bénéfice : <b style="color:#22c55e">${(d.pv-d.pa).toLocaleString()} CDF</b></span>
+      </div>
+      <div style="margin-top:6px;font-size:11px;color:#facc15">${filtreSite===sid?'✅ Filtré sur ce site - Clique Tous pour voir tout':'Clique pour filtrer'}</div>
+    </div>`).join('') + `
+    <div class="site-card ${filtreSite===''?'active':''}" onclick="setSite('')" style="border-style:dashed">
+      <b>🌍 Tous les sites</b>
+      <div class="big" style="margin-top:8px">${Object.values(parSite).reduce((a,x)=>a+x.pv,0).toLocaleString()} CDF</div>
+      <div class="small">Total tous sites - ${Object.values(parSite).reduce((a,x)=>a+x.nb,0)} ventes</div>
+    </div>`;
+
+  // ✅ CONTENU SELON ONGLET
+  if(onglet==='detail'){
+    document.getElementById('list').innerHTML = list.map(v=>{
+      let siteNom = nomSite(v.siteId, v.siteName);
+      let benef = montantPV(v)-montantPA(v);
+      return `<div class="card"><div class="row"><div><b>${v.produit}</b><br><small>📍 ${siteNom} • 👩 ${v.vendeuseNom||v.vendeurNom||v.vendeuseId||'Vendeuse'} • ${new Date(v.date).toLocaleDateString()} ${new Date(v.date).toLocaleTimeString()}</small><br><small style="color:#8a8fa8">Lot ${v.lot||'-'} • PA ${(+v.pa||0).toLocaleString()} → PV ${(+v.pv||0).toLocaleString()} (Admin seulement)</small></div><div style="text-align:right"><b>${v.qte} x ${(v.pv||0).toLocaleString()} = ${montantPV(v).toLocaleString()} CDF</b><br><small style="color:#22c55e">Bénéfice : ${benef.toLocaleString()} CDF</small><br><button class="btn btn-red" onclick="annulerVente('${v.id}')">↩️ Annuler vente</button></div></div></div>`;
+    }).join('') || '<p style="text-align:center;color:#8a8fa8;padding:20px">Aucune vente pour ce filtre. Clique sur un site ou change la période.</p>';
+  }
+
+  if(onglet==='vendeuse'){
+    let byV={};
+    list.forEach(v=>{ let k=(v.vendeuseNom||v.vendeurNom||'Inconnue')+'|'+nomSite(v.siteId, v.siteName); if(!byV[k]) byV[k]={nom:v.vendeuseNom||v.vendeurNom||'Inconnue', site:nomSite(v.siteId, v.siteName), nb:0, qte:0, pv:0, pa:0}; byV[k].nb++; byV[k].qte+=+v.qte||0; byV[k].pv+=montantPV(v); byV[k].pa+=montantPA(v); });
+    document.getElementById('list').innerHTML = Object.values(byV).sort((a,b)=>b.pv-a.pv).map(d=>`<div class="card"><div class="row"><div><b>👩 ${d.nom}</b><br><small>📍 ${d.site} • ${d.nb} ventes • ${d.qte} unités</small></div><div style="text-align:right"><b>${d.pv.toLocaleString()} CDF</b><br><small style="color:#22c55e">Bénéfice : ${(d.pv-d.pa).toLocaleString()} CDF</small></div></div></div>`).join('') || '<p style="text-align:center;color:#8a8fa8">Aucune vente</p>';
+  }
+
+  if(onglet==='produit'){
+    let byP={};
+    list.forEach(v=>{ let k=v.produit+'|'+nomSite(v.siteId, v.siteName); if(!byP[k]) byP[k]={nom:v.produit, site:nomSite(v.siteId, v.siteName), nb:0, qte:0, pv:0, pa:0, pvUnit:v.pv||0}; byP[k].nb++; byP[k].qte+=+v.qte||0; byP[k].pv+=montantPV(v); byP[k].pa+=montantPA(v); });
+    document.getElementById('list').innerHTML = Object.values(byP).sort((a,b)=>b.qte-a.qte).map(d=>`<div class="card"><div class="row"><div><b>📦 ${d.nom}</b><br><small>📍 ${d.site} • PV unitaire ${(+d.pvUnit||0).toLocaleString()} CDF • ${d.nb} ventes</small></div><div style="text-align:right"><b>${d.qte} vendus = ${d.pv.toLocaleString()} CDF</b><br><small style="color:#22c55e">Bénéfice : ${(d.pv-d.pa).toLocaleString()} CDF</small></div></div></div>`).join('') || '<p style="text-align:center;color:#8a8fa8">Aucune vente</p>';
+  }
+}
+
+function annulerVente(id){
+  if(!confirm('Annuler cette vente ? Le stock va retourner dans le site.')) return;
+  let ventes = getVentes();
+  let v = ventes.find(x=>String(x.id)===String(id));
+  if(!v) return;
+  let sp = getSiteProds();
+  let list = sp[v.siteId]||[];
+  let prod = list.find(p=>p.nom===v.produit);
+  if(prod){
+    prod.stock_site = (+prod.stock_site||0) + (+v.qte||0);
+    prod.stock = prod.stock_site;
+  } else {
+    list.push({id:Date.now().toString(), nom:v.produit, lot:v.lot||'', pa:v.pa||0, pv:v.pv||0, prix:v.pv||0, stock_site:+v.qte||0, stock:+v.qte||0});
+  }
+  sp[v.siteId]=list;
+  localStorage.setItem('dub_sites_produits', JSON.stringify(sp));
+  localStorage.setItem('dub_ventes', JSON.stringify(ventes.filter(x=>String(x.id)!==String(id))));
+  render();
+  alert('✅ Vente annulée, stock retourné dans '+nomSite(v.siteId, v.siteName));
+}
+
+function exportExcel(){
+  let list = filtrerVentes();
+  let csv = 'Date;Site;Produit;Vendeuse;Qte;PA;PV;Total PV;Benefice\n';
+  list.forEach(v=>{
+    csv += `${new Date(v.date).toLocaleDateString()} ${new Date(v.date).toLocaleTimeString()};${nomSite(v.siteId, v.siteName)};${v.produit};${v.vendeuseNom||v.vendeurNom||''};${v.qte};${v.pa||0};${v.pv||0};${montantPV(v)};${montantPV(v)-montantPA(v)}\n`;
+  });
+  let blob = new Blob(['\ufeff'+csv], {type:'text/csv'});
+  let a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'ventes-par-site-dubenzene.csv';
+  a.click();
+}
+
+render();
+setInterval(()=>{ let nv = getSites(); if(JSON.stringify(nv)!==JSON.stringify(sites)){ sites=nv; } render(); }, 5000);
+</script>
+</body>
+</html>

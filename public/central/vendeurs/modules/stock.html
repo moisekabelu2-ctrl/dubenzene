@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DUBENZENE - STOCK</title>
+</head>
+<body style="margin:0;padding:8px;font-family:Arial;background:#05070a;color:white" oncontextmenu="return false">
+<style>
+*{box-sizing:border-box;-webkit-touch-callout:none;-webkit-user-select:none !important;-moz-user-select:none !important;-ms-user-select:none !important;user-select:none !important}
+input,select,textarea{-webkit-user-select:text !important;-moz-user-select:text !important;-ms-user-select:text !important;user-select:text !important;-webkit-touch-callout:default}
+.card{background:linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02));border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:8px}
+.input{width:100%;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.12);border-radius:9px;padding:9px 10px;color:white;outline:none;font-size:12px}
+.stock-row{display:grid;grid-template-columns:1fr 45px 70px 85px;gap:5px;align-items:center;padding:5px 4px;border-bottom:1px solid rgba(255,255,255,0.06);min-height:28px}
+.stock-nom{font-size:11px;font-weight:800;text-transform:uppercase;line-height:1.2;word-break:break-word}
+.stock-qte{font-size:11px;font-weight:800;text-align:center;background:rgba(255,255,255,0.06);border-radius:6px;padding:4px 0}
+.stock-pv{font-size:11px;color:#94a3b8;text-align:right;white-space:nowrap}
+.stock-total{font-size:11px;font-weight:900;color:#22c55e;text-align:right;white-space:nowrap}
+.head{font-size:9px;color:#64748b;font-weight:800}
+/* ✅ PLUS DE JAUNE */
+mark{background:transparent;color:inherit;padding:0}
+/* ✅ PAGINATION EXISTE MAIS CACHÉE */
+#pagination{display:none !important;visibility:hidden !important;height:0 !important;overflow:hidden !important}
+.pag-btn{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:white;border-radius:8px;padding:8px 10px;font-size:12px;font-weight:800;cursor:pointer;min-width:36px;text-align:center}
+.pag-btn.active{background:#eab308;color:#000;border-color:#eab308}
+.pag-btn:disabled{opacity:0.3}
+</style>
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+  <h1 style="font-size:15px;margin:0">DUBENZENE <span style="color:#22c55e" id="siteName">VICTOIRE</span></h1>
+  <div id="heure" style="font-size:11px;color:#94a3b8"></div>
+</div>
+
+<div class="card">
+  <input id="search" class="input" placeholder="🔍 Produit..." autocomplete="off" autocorrect="off" spellcheck="false">
+  <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:11px"><b>STOCK</b><span id="countFound" style="color:#facc15;font-weight:900"></span></div>
+  <div class="stock-row" style="border-bottom:2px solid rgba(255,255,255,0.12);margin-top:4px;min-height:20px">
+    <div class="head">PRODUIT</div>
+    <div class="head" style="text-align:center">QTE</div>
+    <div class="head" style="text-align:right">PV</div>
+    <div class="head" style="text-align:right">TOTAL</div>
+  </div>
+  <div id="list"></div>
+
+  <!-- ✅ PAGINATION EXISTE ICI, MAIS CACHÉE PAR CSS -->
+  <div id="pagination"></div>
+  <div id="debug" style="font-size:10px;color:#64748b;text-align:center;padding:4px"></div>
+</div>
+
+<script>
+(function(){
+  function estChamp(el){ return el && (el.tagName==='INPUT'||el.tagName==='TEXTAREA'||el.tagName==='SELECT'); }
+  document.addEventListener('contextmenu', function(e){ if(!estChamp(e.target)) e.preventDefault(); });
+  document.addEventListener('copy', function(e){ if(!estChamp(e.target)) e.preventDefault(); });
+  document.addEventListener('cut', function(e){ if(!estChamp(e.target)) e.preventDefault(); });
+  document.addEventListener('paste', function(e){ if(!estChamp(e.target)) e.preventDefault(); });
+  document.addEventListener('selectstart', function(e){ if(!estChamp(e.target)) e.preventDefault(); });
+  document.addEventListener('dragstart', function(e){ e.preventDefault(); });
+  document.addEventListener('keydown', function(e){
+    if((e.ctrlKey||e.metaKey) && ['c','x','a','u','s','p'].includes(e.key.toLowerCase())){
+      if(!estChamp(e.target)) e.preventDefault();
+    }
+    if(e.key==='F12') e.preventDefault();
+  });
+  document.addEventListener('touchstart', function(e){ if(e.touches.length>1) e.preventDefault(); }, {passive:false});
+})();
+
+let SITE_ID = 'victoire';
+try{
+  let u = JSON.parse(localStorage.getItem('user')||'{}');
+  if(u.siteId) SITE_ID = u.siteId;
+  else {
+    let uid = localStorage.getItem('dub_current_user_id');
+    let users = JSON.parse(localStorage.getItem('dub_users')||'[]');
+    let me = users.find(x=>String(x.id)===String(uid));
+    if(me && me.siteId) SITE_ID = me.siteId;
+  }
+}catch(e){}
+
+let RESULTATS = [];
+let PAGE = 1;
+const PAGE_SIZE = 20;
+
+function getStock(p){ return +p.stock || +p.stock_site || +p.quantite || +p.qte || 0; }
+function getPV(p){ return +p.pv || +p.prix || 0; }
+function normaliser(txt){
+  return String(txt||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/(\d)(mg|ml|g|kg|cp|pcs|ml)/g,'$1 $2').replace(/[^a-z0-9]+/g,' ').trim();
+}
+let SYNONYMES = {
+  'para':'paracetamol','paracet':'paracetamol','amox':'amoxicilline','amoxi':'amoxicilline',
+  'cipro':'ciprofloxacine','ciflox':'ciprofloxacine','clamo':'clamoxyl','clam':'clamoxyl',
+  'ibup':'ibuprofene','ibu':'ibuprofene','doli':'doliprane','dol':'doliprane',
+  'vitc':'vitamine c','vit':'vitamine','sirop':'sirop','srp':'sirop','sp':'sirop',
+  'inj':'injectable','injec':'injectable','comp':'comprime','cp':'comprime','cpr':'comprime',
+  'gel':'gel','pomm':'pommade','creme':'creme','susp':'suspension','goutte':'gouttes','gttes':'gouttes'
+};
+function expandMot(m){ return SYNONYMES[m] ? SYNONYMES[m].split(' ') : [m]; }
+function levenshtein(a,b){
+  if(a===b) return 0; if(!a.length) return b.length; if(!b.length) return a.length;
+  let prev = Array.from({length:b.length+1},(_,i)=>i);
+  for(let i=1;i<=a.length;i++){ let cur=[i]; for(let j=1;j<=b.length;j++){ let cost=a[i-1]===b[j-1]?0:1; cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+cost); } prev=cur; }
+  return prev[b.length];
+}
+function motMatch(motTape, motsNom){
+  for(let w of motsNom){
+    if(w===motTape) return 100;
+    if(w.startsWith(motTape)) return 90;
+    if(w.includes(motTape)) return 80;
+    if(motTape.length>=4){ let d=levenshtein(motTape,w); if(d===1) return 70; if(d===2 && motTape.length>=6) return 60; }
+  }
+  let nomJoint=motsNom.join(''); let idx=0, ok=true;
+  for(let c of motTape){ let p=nomJoint.indexOf(c,idx); if(p===-1){ ok=false; break; } idx=p+1; }
+  if(ok) return 45; return 0;
+}
+function extraireProduits(val){
+  if(!val) return [];
+  if(Array.isArray(val)) return val;
+  if(typeof val==='object'){
+    if(Array.isArray(val.produits)) return val.produits;
+    if(Array.isArray(val.items)) return val.items;
+    let out=[];
+    for(let k in val){ if(Array.isArray(val[k])) out=out.concat(val[k]); else if(val[k] && typeof val[k]==='object' && val[k].nom) out.push(val[k]); }
+    if(out.length) return out;
+    if(val.nom) return [val];
+  }
+  return [];
+}
+function getList(){
+  let allRaw=[];
+  try{ let sp=JSON.parse(localStorage.getItem('dub_sites_produits')||'{}'); allRaw=allRaw.concat(extraireProduits(sp[SITE_ID])); }catch(e){}
+  try{ let sp=JSON.parse(localStorage.getItem('dub_sites_produits')||'{}'); for(let k in sp){ if(k.toLowerCase()===String(SITE_ID).toLowerCase() && k!==SITE_ID) allRaw=allRaw.concat(extraireProduits(sp[k])); } }catch(e){}
+  ['dub_produits','dub_stock','dub_inventory','produits','stock'].forEach(ck=>{
+    try{ let v=JSON.parse(localStorage.getItem(ck)||'null'); allRaw=allRaw.concat(extraireProduits(v)); }catch(e){}
+  });
+  let map={};
+  allRaw.forEach(p=>{
+    if(!p || !p.nom) return;
+    if(p.desactive || p.actif===false || p.statut==='desactive' || p.statut==='inactif') return;
+    let key=(p.nom||'').toLowerCase().trim(); if(!key) return;
+    if(!map[key]) map[key]={nom:p.nom, stock:0, pv:getPV(p), _n:normaliser(p.nom), _mots:normaliser(p.nom).split(' ').filter(Boolean)};
+    map[key].stock+=getStock(p);
+    let pv=getPV(p); if(pv>map[key].pv) map[key].pv=pv;
+  });
+  return Object.values(map).sort((a,b)=>a.nom.localeCompare(b.nom));
+}
+// ✅ PLUS DE JAUNE : on retourne le nom tel quel
+function surligner(nom,q){
+  return nom;
+}
+function htmlLigne(p,q){
+  let pvTotal=p.stock*p.pv;
+  let couleur=p.stock<=0?'#ef4444':(p.stock<=5?'#facc15':'#22c55e');
+  return '<div class="stock-row"><div class="stock-nom">'+surligner(p.nom,q)+'</div><div class="stock-qte" style="color:'+couleur+'">'+p.stock+'</div><div class="stock-pv">'+p.pv.toLocaleString()+' FC</div><div class="stock-total">'+pvTotal.toLocaleString()+' FC</div></div>';
+}
+
+// ✅ PAGINATION EXISTE, MAIS CACHÉE
+function rendrePagination(){
+  let total=RESULTATS.length;
+  let nbPages=Math.ceil(total/PAGE_SIZE)||1;
+  if(PAGE>nbPages) PAGE=nbPages; if(PAGE<1) PAGE=1;
+  let el=document.getElementById('pagination');
+  if(total===0){ el.innerHTML='<span>Aucun produit</span>'; return; }
+  if(total<=PAGE_SIZE){ el.innerHTML='<span>Page 1 / 1 • '+total+' produits</span>'; return; }
+  let html='<button class="pag-btn" data-page="'+(PAGE-1)+'" '+(PAGE===1?'disabled':'')+'>‹</button>';
+  let debut=Math.max(1,PAGE-2), fin=Math.min(nbPages,PAGE+2);
+  if(debut>1){ html+='<button class="pag-btn" data-page="1">1</button>'; if(debut>2) html+='<span>...</span>'; }
+  for(let i=debut;i<=fin;i++){ html+='<button class="pag-btn '+(i===PAGE?'active':'')+'" data-page="'+i+'">'+i+'</button>'; }
+  if(fin<nbPages){ if(fin<nbPages-1) html+='<span>...</span>'; html+='<button class="pag-btn" data-page="'+nbPages+'">'+nbPages+'</button>'; }
+  html+='<button class="pag-btn" data-page="'+(PAGE+1)+'" '+(PAGE===nbPages?'disabled':'')+'>›</button>';
+  html+='<span>Page '+PAGE+' / '+nbPages+'</span>';
+  el.innerHTML=html;
+}
+document.getElementById('pagination').addEventListener('click', function(e){
+  let btn=e.target.closest('[data-page]');
+  if(!btn) return;
+  let p=parseInt(btn.getAttribute('data-page'),10);
+  let nbPages=Math.ceil(RESULTATS.length/PAGE_SIZE)||1;
+  if(p<1) p=1; if(p>nbPages) p=nbPages;
+  PAGE=p; afficherPage(); window.scrollTo({top:0, behavior:'smooth'});
+});
+
+function afficherPage(){
+  let qRaw=document.getElementById('search').value||'';
+  let debut=(PAGE-1)*PAGE_SIZE;
+  let listPage=RESULTATS.slice(debut, debut+PAGE_SIZE);
+  document.getElementById('list').innerHTML=listPage.map(p=>htmlLigne(p,qRaw)).join('');
+  let nbPages=Math.ceil(RESULTATS.length/PAGE_SIZE)||1;
+  document.getElementById('countFound').innerText=listPage.length+' / '+RESULTATS.length;
+  document.getElementById('debug').innerText='Page '+PAGE+' / '+nbPages+' • Affichés : '+listPage.length+' • Total : '+RESULTATS.length;
+  rendrePagination();
+}
+function filtrer(resetPage){
+  if(resetPage) PAGE=1;
+  let qRaw=document.getElementById('search').value||'';
+  let q=normaliser(qRaw);
+  document.getElementById('siteName').innerText=String(SITE_ID).toUpperCase();
+  let all=getList();
+  if(q.length<1){ RESULTATS=all; }
+  else{
+    let motsQ=[]; q.split(' ').filter(Boolean).forEach(m=>{ motsQ.push(...expandMot(m)); });
+    let scores=[];
+    for(let p of all){
+      let total=0, ok=true;
+      for(let m of motsQ){ let s=motMatch(m,p._mots); if(s===0){ ok=false; break; } total+=s; if(p._n.startsWith(m)) total+=20; }
+      if(!ok) continue; total-=p._n.length*0.1; scores.push({p:p,score:total});
+    }
+    scores.sort((a,b)=>b.score-a.score||a.p.nom.localeCompare(b.p.nom));
+    RESULTATS=scores.map(x=>x.p);
+  }
+  afficherPage();
+}
+document.getElementById('search').addEventListener('input', function(){ filtrer(true); });
+
+// ✅ SCROLL = pagination cachée en action
+window.addEventListener('scroll', function(){
+  if((window.innerHeight + window.scrollY) < document.body.scrollHeight - 100) return;
+  let nbPages=Math.ceil(RESULTATS.length/PAGE_SIZE)||1;
+  if(PAGE >= nbPages) return;
+  PAGE++; afficherPage();
+});
+
+filtrer(true);
+setInterval(function(){ document.getElementById('heure').innerText=new Date().toLocaleTimeString(); },1000);
+</script>
+</body>
+</html>

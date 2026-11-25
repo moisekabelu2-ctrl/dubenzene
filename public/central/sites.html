@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sites</title>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<link rel="stylesheet" href="css/sites.css">
+</head>
+<body>
+<div id="view-list" class="view show">
+<div class="header"><div><h1 class="h1">🏢 Sites</h1><p class="sub">Dépôt : PA seulement | Site : PA + PV + Marge</p></div><div style="display:flex;gap:8px"><button onclick="openCreate()" class="btn btn-yellow" id="btnNewSite">+ Nouveau Site</button><button onclick="logout()" class="btn btn-dark" style="font-size:10px">Logout</button></div></div>
+<div id="whoami" style="margin-bottom:12px;padding:10px 14px;border-radius:12px;background:#171a23;border:1px solid #222735;font-size:11px;color:#8a8fa8"></div>
+<div id="grid" class="grid grid-3"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+</div>
+<div id="view-detail" class="view">
+<button onclick="showList()" class="btn btn-dark" style="margin-bottom:12px">← Retour</button>
+<h2 id="detail-title" style="font-weight:900;font-size:20px"></h2><p id="detail-sub" style="font-size:11px;color:#6a7085;margin-bottom:12px"></p>
+<div id="siteMargeBar" style="display:none;background:rgba(250,204,21,.08);border:1px solid rgba(250,204,21,.25);padding:10px 14px;border-radius:12px;margin-bottom:12px;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+<span id="siteMargeText" style="font-size:12px;font-weight:800;color:#facc15"></span>
+<button onclick="openSiteMargeModal()" class="btn btn-yellow" style="padding:6px 12px;font-size:11px">✏️ Marge par Défaut</button>
+</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px"><button id="btnLoadDepot" onclick="toggleLoad()" class="btn btn-yellow">+ Charger depuis Dépôt</button><button id="btnImport" onclick="document.getElementById('fileExcel').click()" class="btn btn-dark">📥 Import Excel</button><button id="btnExportSite" onclick="exportSite()" class="btn btn-dark">📤 Export Site</button><button id="btnExportGlobal" onclick="exportGlobal()" class="btn btn-dark">🌍 Export Global</button><button id="btnModele" onclick="telechargerModeleSite()" class="btn btn-dark">📄 Modèle</button><input type="file" id="fileExcel" accept=".xlsx,.xls,.csv" style="display:none" onchange="importExcelSite(event)"><input id="search-site" class="search" placeholder="🔍 Chercher..." oninput="onSearchDetail()"></div>
+<div id="importStatus" style="display:none;padding:12px;border-radius:12px;margin-bottom:10px;font-weight:700;font-size:13px"></div>
+<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+<button id="fTous" class="filter-btn active" onclick="setFiltreStatut('tous')">Tous</button>
+<button id="fActifs" class="filter-btn" onclick="setFiltreStatut('actifs')">✅ Actifs</button>
+<button id="fDesactives" class="filter-btn" onclick="setFiltreStatut('desactives')">⏸️ Désactivés</button>
+</div>
+<div id="detail-stats" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
+<div class="table-wrap"><table><thead id="thead-site"></thead><tbody id="tbody-site"></tbody></table><div id="paginationDetail" class="pag"></div></div>
+<div id="loadSection" style="display:none;margin-top:20px;border-top:1px solid #222735;padding-top:14px">
+<h3 style="margin-bottom:4px;font-size:14px">⬇️ Dépôt - Chargement</h3>
+<div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:center">
+<input id="searchDepot" class="search" placeholder="🔍 Chercher au Dépôt..." oninput="onSearchDepot()" style="flex:1">
+<button onclick="pendingQty={};renderDepot()" class="btn btn-dark" style="padding:8px 12px;font-size:11px">↺ Quantités à 0</button>
+</div>
+<div id="multiBar" style="display:none;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);padding:12px;border-radius:12px;margin-bottom:10px;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+<span id="multiInfo" style="font-size:12px;font-weight:800;color:#22c55e">0 produit</span>
+<button onclick="transferMultiple()" class="btn btn-green">✅ Charger la sélection</button>
+</div>
+<div class="table-wrap"><table><thead><tr><th>Produit</th><th>Lots</th><th>Stock Dépôt</th><th>PA</th><th>Marge</th><th>PV Site</th><th>Qté</th><th>Charger</th></tr></thead><tbody id="tbody-depot"></tbody></table><div id="paginationDepot" class="pag"></div></div>
+</div>
+</div>
+<div class="modal-overlay" id="createModal"><div class="modal-box"><div class="modal-head"><span>➕ Nouveau Site</span><button onclick="closeCreate()" style="background:0;border:0;color:#fff;font-size:22px">×</button></div><div class="modal-body" style="display:grid;gap:10px"><div><label style="font-size:10px;color:#facc15">Nom Site *</label><input id="s_nom" class="input" placeholder="Ex: Kintambo"></div><div><label style="font-size:10px;color:#5a6080">Localisation</label><input id="s_loc" class="input" placeholder="Kintambo"></div><div><label style="font-size:10px;color:#5a6080">Responsable</label><input id="s_resp" class="input"></div><div><label style="font-size:10px;color:#22c55e">Marge par Défaut %</label><input id="s_marge" type="number" class="input" placeholder="Ex: 45"></div><div style="display:flex;gap:8px"><button onclick="closeCreate()" class="btn btn-dark" style="flex:1">Annuler</button><button onclick="saveSite()" class="btn btn-yellow" style="flex:2">💾 Créer</button></div><p id="msg" style="font-size:11px;text-align:center;font-weight:800"></p></div></div></div>
+<div class="modal-overlay" id="renameModal"><div class="modal-box"><div class="modal-head"><span>✏️ Renommer Site</span><button onclick="closeRename()" style="background:0;border:0;color:#fff;font-size:22px">×</button></div><div class="modal-body" style="display:grid;gap:10px"><div><label style="font-size:10px;color:#facc15">Nouveau nom *</label><input id="r_nom" class="input" placeholder="Nouveau nom"></div><div style="display:flex;gap:8px"><button onclick="closeRename()" class="btn btn-dark" style="flex:1">Annuler</button><button onclick="confirmRename()" class="btn btn-yellow" style="flex:2">✏️ Renommer</button></div></div></div></div>
+<div class="modal-overlay" id="siteMargeModal"><div class="modal-box"><div class="modal-head"><span>🏷️ Marge par Défaut</span><button onclick="closeSiteMargeModal()" style="background:0;border:0;color:#fff;font-size:22px">×</button></div><div class="modal-body" style="display:grid;gap:12px"><div><span class="label-mini">Site</span><div id="smSiteName" style="font-weight:900;font-size:15px"></div></div><div><span class="label-mini" style="color:#22c55e">Marge par Défaut %</span><input id="sm_marge" type="number" class="input" oninput="updateSiteMargePreview()" style="border-color:#22c55e" placeholder="Ex: 45"></div><div class="preview-box" id="smPreview"></div><label style="display:flex;gap:8px;align-items:center;font-size:12px;cursor:pointer"><input type="checkbox" id="sm_applyAll" checked style="width:18px;height:18px;accent-color:#22c55e"> <span>Appliquer aux produits sans marge propre</span></label><div style="display:flex;gap:8px"><button onclick="closeSiteMargeModal()" class="btn btn-dark" style="flex:1">Annuler</button><button onclick="saveSiteMarge()" class="btn btn-green" style="flex:2">💾 Sauver</button></div></div></div></div>
+<div class="modal-overlay" id="priceModal"><div class="modal-box"><div class="modal-head"><span id="priceTitle">✏️ Prix / Marge</span><button onclick="closePriceModal()" style="background:0;border:0;color:#fff;font-size:22px">×</button></div><div class="modal-body" style="display:grid;gap:12px">
+<div><span class="label-mini">Produit</span><div id="priceProdName" style="font-weight:900;font-size:15px"></div><div id="priceSiteName" style="font-size:11px;color:#6a7085"></div><div id="priceSiteMargeHint" style="font-size:11px;color:#facc15;margin-top:4px"></div></div>
+<div><span class="label-mini" style="color:#facc15">PA - Global</span><input id="editPA" type="number" class="input" oninput="onPriceInput('pa')" style="border-color:#facc15"></div>
+<div><span class="label-mini" style="color:#22c55e">Marge % - Ce produit dans ce site</span><input id="editMarge" type="number" class="input" oninput="onPriceInput('marge')" style="border-color:#22c55e"></div>
+<div><span class="label-mini" style="color:#22c55e">PV - Ce site seulement</span><input id="editPV" type="number" class="input" oninput="onPriceInput('pv')" style="border-color:#22c55e"></div>
+<div class="preview-box" id="pricePreview"></div>
+<div style="display:flex;gap:8px"><button onclick="closePriceModal()" class="btn btn-dark" style="flex:1">Annuler</button><button onclick="savePrice()" class="btn btn-green" style="flex:2">💾 Sauver</button></div>
+</div></div></div>
+<div class="modal-overlay" id="depotPAModal"><div class="modal-box"><div class="modal-head"><span>✏️ Modifier PA - Dépôt</span><button onclick="closeDepotPAModal()" style="background:0;border:0;color:#fff;font-size:22px">×</button></div><div class="modal-body" style="display:grid;gap:12px"><div><span class="label-mini">Produit au Dépôt</span><div id="depotPAProdName" style="font-weight:900;font-size:15px"></div><div id="depotPAProdInfo" style="font-size:11px;color:#6a7085"></div></div><div><span class="label-mini" style="color:#facc15">PA - Global</span><input id="editDepotPA" type="number" class="input" style="border-color:#facc15"></div><div style="display:flex;gap:8px"><button onclick="closeDepotPAModal()" class="btn btn-dark" style="flex:1">Annuler</button><button onclick="saveDepotPA()" class="btn btn-yellow" style="flex:2">💾 Sauver PA</button></div></div></div></div>
+<script src="js/common.js"></script>
+<script src="js/sites.js"></script>
+</body>
+</html>

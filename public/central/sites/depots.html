@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dépôt Site</title>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0f1115;color:#fff;font-family:Inter,sans-serif;padding:16px}
+.btn-back{margin-bottom:12px;background:#171a23;border:1px solid #222735;padding:10px 14px;border-radius:12px;color:#fff;cursor:pointer}
+.btn{padding:10px 16px;border-radius:12px;border:1px solid #222735;font-weight:700;cursor:pointer}
+.btn-yellow{background:#facc15;color:#000}.btn-dark{background:#171a23;color:#fff}.btn-g{background:rgba(34,197,94,.15);color:#22c55e}.btn-r{background:rgba(239,68,68,.15);color:#f87171}
+.btn-mini{padding:6px 10px;border-radius:8px;font-size:11px;font-weight:800;border:0;cursor:pointer}
+.table-wrap{background:#171a23;border:1px solid #222735;border-radius:16px;overflow:auto;margin-top:12px}
+table{width:100%;font-size:12px;border-collapse:collapse;min-width:750px}
+th{padding:12px 14px;text-align:left;color:#5a6080;font-size:10px;text-transform:uppercase;background:#0f1115}
+td{padding:12px 14px;border-top:1px solid #1f2438}
+.search{padding:11px 14px;border-radius:12px;background:#171a23;border:1px solid #222735;color:#fff;min-width:260px;outline:none}
+.input{width:100%;background:#0f1115;border:1px solid #222735;border-radius:12px;padding:11px 14px;color:#fff}
+</style>
+</head>
+<body>
+<button onclick="goBack()" class="btn-back">← Retour Sites</button>
+<h2 id="title" style="font-weight:900">Chargement...</h2>
+<p id="sub" style="font-size:11px;color:#6a7085;margin-bottom:12px"></p>
+
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+<button onclick="openLoad()" class="btn btn-yellow">+ Charger depuis Dépôt Central</button>
+<button onclick="document.getElementById('fileExcel').click()" class="btn btn-dark">📥 Import Excel direct dans ce site</button>
+<input type="file" id="fileExcel" accept=".xlsx,.xls,.csv" style="display:none">
+<button onclick="goStock()" class="btn btn-dark">📊 Voir Stock par Site</button>
+<input id="search" class="search" placeholder="🔍 Chercher produit du site..." oninput="renderSite()">
+</div>
+
+<div id="stats" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px"></div>
+
+<div class="table-wrap"><table><thead><tr><th>Produit</th><th>Fournisseur / Lot</th><th>Péremption</th><th>Stock Site</th><th>PA</th><th>Retirer</th></tr></thead><tbody id="tbody-site"></tbody></table></div>
+
+<div id="loadSection" style="display:none;margin-top:20px">
+<h3 style="margin-bottom:8px">⬇️ Dépôt Central - Choisis à charger</h3>
+<div style="display:flex;gap:8px;margin-bottom:8px"><input id="searchDepot" class="search" placeholder="🔍 Chercher au Dépôt..." oninput="renderDepot()" style="flex:1"></div>
+<div class="table-wrap"><table><thead><tr><th>Produit Dépôt</th><th>Fournisseur / Lot</th><th>Stock Dépôt</th><th>Qté</th><th>Charger</th></tr></thead><tbody id="tbody-depot"></tbody></table></div>
+</div>
+
+<script>
+const siteId=new URLSearchParams(location.search).get('siteId');
+const KEY_SITES='dub_sites', KEY_PROD='dubenzen_produits', KEY_SITE_PRODS='dub_sites_produits';
+function getSites(){try{return JSON.parse(localStorage.getItem(KEY_SITES)||'[]')}catch(e){return []}}
+function getAllProds(){try{return JSON.parse(localStorage.getItem(KEY_PROD)||'[]')}catch(e){return []}}
+function getSiteProds(){try{return JSON.parse(localStorage.getItem(KEY_SITE_PRODS)||'{}')}catch(e){return {}}}
+function saveSiteProds(o){localStorage.setItem(KEY_SITE_PRODS,JSON.stringify(o))}
+let excelData=[];
+
+function init(){
+ let s=getSites().find(x=>String(x.id)===String(siteId));
+ if(!s){document.getElementById('title').textContent='Site introuvable'; return;}
+ document.getElementById('title').textContent=`🏢 ${s.nom}`;
+ document.getElementById('sub').textContent=`📍 ${s.localisation||'-'} • Gère ici import Excel + chargement depuis Dépôt Central`;
+ renderSite();
+}
+function renderSite(){
+ let sp=getSiteProds(); let list=sp[siteId]||[];
+ let q=document.getElementById('search').value.toLowerCase().trim();
+ if(q) list=list.filter(p=>`${p.nom} ${p.fournisseur} ${p.lot}`.toLowerCase().includes(q));
+ let totalStock=list.reduce((a,p)=>a+(p.stock_site||0),0);
+ let totalVal=list.reduce((a,p)=>a+(p.pa||0)*(p.stock_site||0),0);
+ document.getElementById('stats').innerHTML=`<span style="padding:6px 10px;background:#171a23;border-radius:999px;border:1px solid #222735;font-size:11px">📦 ${list.length} produits</span><span style="padding:6px 10px;background:rgba(34,197,94,.15);border-radius:999px;font-size:11px;color:#22c55e">Stock ${totalStock}</span><span style="padding:6px 10px;background:rgba(250,204,21,.15);border-radius:999px;font-size:11px;color:#facc15">${totalVal.toLocaleString()} CDF</span>`;
+ document.getElementById('tbody-site').innerHTML=list.map(p=>{
+  let jr=p.peremption?Math.ceil((new Date(p.peremption)-new Date())/(1000*60*60*24)):9999;
+  let col=jr<0?'#f87171':jr<30?'#fb923c':'#22c55e';
+  return `<tr><td style="font-weight:700">${p.nom}</td><td>🏭 ${p.fournisseur||''}<br><small>Lot ${p.lot||'-'}</small></td><td style="color:${col}">${p.peremption||'-'}</td><td style="font-weight:900">${p.stock_site||0}</td><td style="color:#facc15">${(p.pa||0).toLocaleString()}</td><td><button onclick="remove('${p.id}')" class="btn-mini btn-r">Retirer</button></td></tr>`;
+ }).join('')||`<tr><td colspan="6" style="text-align:center;padding:20px;color:#6a7085">Aucun produit. Importe Excel ou charge depuis Dépôt Central.</td></tr>`;
+}
+function openLoad(){document.getElementById('loadSection').style.display='block'; renderDepot();}
+function renderDepot(){
+ let all=getAllProds();
+ let q=document.getElementById('searchDepot').value.toLowerCase().trim();
+ if(q) all=all.filter(p=>`${p.nom} ${p.fournisseur} ${p.lot}`.toLowerCase().includes(q));
+ document.getElementById('tbody-depot').innerHTML=all.map(p=>{
+  return `<tr><td style="font-weight:700">${p.nom}</td><td>🏭 ${p.fournisseur||''}<br><small>Lot ${p.lot||''}</small></td><td>${p.stock||0}</td><td><input id="qte-${p.id}" type="number" min="1" max="${p.stock||0}" value="1" style="width:70px;background:#0f1115;border:1px solid #222735;border-radius:8px;padding:6px;color:#fff"></td><td>${(p.stock||0)>0?`<button onclick="transfer('${p.id}')" class="btn-mini btn-g">Charger</button>`:`<span style="color:#f87171;font-size:10px">Rupture</span>`}</td></tr>`;
+ }).join('')||`<tr><td colspan="5" style="text-align:center;color:#6a7085">Aucun au Dépôt</td></tr>`;
+}
+function transfer(prodId){
+ let all=getAllProds(); let idx=all.findIndex(p=>String(p.id)===String(prodId)); if(idx<0) return;
+ let prod=all[idx];
+ let qte=parseInt(document.getElementById('qte-'+prodId).value)||0;
+ if(qte<=0||qte> (prod.stock||0)) return alert('Qté invalide');
+ let sp=getSiteProds(); let list=sp[siteId]||[];
+ let existing=list.find(x=>String(x.originalId)===String(prodId));
+ if(existing){ existing.stock_site+=qte; } else {
+  // anti doublon même site: même nom+four+lot mais ID différent
+  let dup=list.find(p=>p.nom.toLowerCase()===prod.nom.toLowerCase() && (p.fournisseur||'').toLowerCase()===(prod.fournisseur||'').toLowerCase() && (p.lot||'').toLowerCase()===(prod.lot||'').toLowerCase() && String(p.originalId)!==String(prodId));
+  if(dup) return alert('❌ Déjà même Nom+Fournisseur+Lot dans ce site');
+  list.push({id:Date.now().toString()+Math.random().toString().slice(2,6), originalId:prod.id, nom:prod.nom, fournisseur:prod.fournisseur, lot:prod.lot, peremption:prod.peremption, pa:prod.pa, stock_site:qte});
+ }
+ all[idx].stock-=qte; localStorage.setItem(KEY_PROD,JSON.stringify(all));
+ sp[siteId]=list; saveSiteProds(sp);
+ renderSite(); renderDepot();
+}
+function remove(siteProdId){
+ if(!confirm('Retirer ? Retourne au Dépôt')) return;
+ let sp=getSiteProds(); let list=sp[siteId]||[]; let idx=list.findIndex(p=>String(p.id)===String(siteProdId)); if(idx<0) return;
+ let ps=list[idx];
+ let all=getAllProds(); let depIdx=all.findIndex(p=>String(p.id)===String(ps.originalId)); if(depIdx>=0) all[depIdx].stock=(all[depIdx].stock||0)+(ps.stock_site||0);
+ localStorage.setItem(KEY_PROD,JSON.stringify(all));
+ list.splice(idx,1); sp[siteId]=list; saveSiteProds(sp); renderSite();
+}
+// IMPORT EXCEL DIRECT DANS CE SITE
+document.getElementById('fileExcel').addEventListener('change', function(e){
+ let file=e.target.files[0]; if(!file) return;
+ let reader=new FileReader();
+ reader.onload=function(ev){
+  let data=new Uint8Array(ev.target.result);
+  let wb=XLSX.read(data,{type:'array'});
+  let sheet=wb.Sheets[wb.SheetNames[0]];
+  let json=XLSX.utils.sheet_to_json(sheet,{defval:''});
+  let sp=getSiteProds(); let list=sp[siteId]||[]; let all=getAllProds();
+  let added=0, blocked=0;
+  json.forEach(row=>{
+   let nom=(row.nom||row.Nom||'').toString().trim(); if(!nom) return;
+   let fourn=(row.fournisseur||'').toString().trim();
+   let lot=(row.lot||'').toString().trim();
+   // anti doublon dans ce site
+   let dupSite=list.find(p=>p.nom.toLowerCase()===nom.toLowerCase() && (p.fournisseur||'').toLowerCase()===fourn.toLowerCase() && (p.lot||'').toLowerCase()===lot.toLowerCase());
+   if(dupSite){blocked++; return;}
+   // anti doublon global dépôt
+   let dupDepot=all.find(p=>p.nom.toLowerCase()===nom.toLowerCase() && (p.fournisseur||'').toLowerCase()===fourn.toLowerCase() && (p.lot||'').toLowerCase()===lot.toLowerCase());
+   let originalId=dupDepot?dupDepot.id:Date.now().toString()+Math.random().toString().slice(2,6);
+   // si pas au dépôt, on l'ajoute aussi au dépôt pour garder traçabilité
+   if(!dupDepot){
+    let objDepot={id:originalId, nom:nom, fournisseur:fourn, lot:lot, peremption:(row.peremption||'').toString().slice(0,10), pa:+(row.pa||0), stock:0, conditionnement:(row.conditionnement||'Boîte').toString(), barcode:(row.barcode||'').toString(), site:'Dépôt Central'};
+    all.unshift(objDepot);
+   }
+   list.push({id:Date.now().toString()+Math.random().toString().slice(2,6), originalId:originalId, nom:nom, fournisseur:fourn, lot:lot, peremption:(row.peremption||'').toString().slice(0,10), pa:+(row.pa||0), stock_site:+(row.stock||row.qte||1), conditionnement:(row.conditionnement||'Boîte').toString()});
+   added++;
+  });
+  localStorage.setItem(KEY_PROD,JSON.stringify(all));
+  sp[siteId]=list; saveSiteProds(sp);
+  alert(`✅ Import site: ${added} ajoutés, ${blocked} doublons bloqués`);
+  renderSite();
+ };
+ reader.readAsArrayBuffer(file);
+});
+function goBack(){location.href='/central/site.html';}
+function goStock(){location.href=`/central/site/stock-par-site.html?siteId=${siteId}`;}
+init();
+</script>
+</body>
+</html>

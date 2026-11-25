@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DUBENZENE - Dashboard Vendeur</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;800&family=Space+Grotesk:wght@700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#05070a;color:white;font-family:'Plus Jakarta Sans',sans-serif;padding:14px}
+.card{background:linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02));border:1px solid rgba(255,255,255,0.1);border-radius:20px;backdrop-filter:blur(20px);padding:16px}
+.kpi{background:linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02));border:1px solid rgba(255,255,255,0.1);border-radius:18px;padding:16px;backdrop-filter:blur(20px)}
+.mono{font-family:monospace}
+.pill{padding:6px 12px;border-radius:100px;font-size:10px;font-weight:800;border:1px solid rgba(255,255,255,0.12)}
+.dot{width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block}
+.bars{display:flex;align-items:end;gap:10px;height:120px;margin-top:16px}
+.bar{flex:1;background:linear-gradient(to top,#22c55e,#16a34a);border-radius:8px 8px 0 0;position:relative;min-height:8px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
+.gridPerf{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+@media(max-width:800px){.grid4{grid-template-columns:1fr 1fr}.gridPerf{grid-template-columns:1fr}}
+.btn-vente{background:#22c55e;color:#000;border:none;padding:12px 18px;border-radius:12px;font-weight:900;cursor:pointer;width:100%;margin-top:12px}
+.btn-caisse{background:#fff;color:#000;border:none;padding:12px 18px;border-radius:12px;font-weight:900;cursor:pointer;width:100%;margin-top:8px}
+.periode-btn{padding:8px 14px;border-radius:100px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#94a3b8;font-weight:800;font-size:11px;cursor:pointer}
+.periode-btn.active{background:#8b5cf6;color:#fff;border-color:#8b5cf6}
+</style>
+</head>
+<body>
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+<div style="display:flex;gap:12px;align-items:center"><div style="width:44px;height:44px;border-radius:12px;background:radial-gradient(at 30% 20%,#facc15,#eab308);display:flex;align-items:center;justify-content:center">💎</div><div><h1 style="font-family:'Space Grotesk';font-size:18px;color:white">DUBENZENE <span style="color:#22c55e" id="siteName">VICTOIRE</span> • DASHBOARD</h1><div style="font-size:9px;letter-spacing:2px;color:#64748b" id="userLabel">VENDEUR</div></div></div>
+<div style="display:flex;gap:8px"><div class="pill" style="background:rgba(34,197,94,0.12);color:#22c55e"><span class="dot"></span> TAUX: <span id="tauxH">0</span> FC</div><div class="pill" style="color:#94a3b8" id="heure"></div></div>
+</div>
+
+<div class="grid4">
+<div class="kpi"><div style="font-size:9px;letter-spacing:1px;color:#64748b">CA DU JOUR • VALIDÉ</div><div id="caJour" style="font-family:'Space Grotesk';font-size:22px;font-weight:800;margin-top:6px;color:white">0,00 FC</div><div id="caEvol" style="font-size:11px;color:#22c55e;margin-top:4px">—</div></div>
+<div class="kpi"><div style="font-size:9px;letter-spacing:1px;color:#64748b">VENTES VALIDÉES JOUR</div><div id="nbVentes" style="font-family:'Space Grotesk';font-size:22px;font-weight:800;margin-top:6px;color:white">0</div><div id="nbClients" style="font-size:11px;color:#94a3b8;margin-top:4px">0 articles</div></div>
+<div class="kpi"><div style="font-size:9px;letter-spacing:1px;color:#64748b">TAUX DU JOUR SITE</div><div id="tauxJour" style="font-family:'Space Grotesk';font-size:22px;font-weight:800;margin-top:6px;color:white">0 FC</div><div style="font-size:11px;color:#64748b;margin-top:4px">1$ = <span id="tauxDetail">0</span> FC</div></div>
+<div class="kpi"><div style="font-size:9px;letter-spacing:1px;color:#64748b">PANIER MOYEN JOUR</div><div id="panierMoy" style="font-family:'Space Grotesk';font-size:22px;font-weight:800;margin-top:6px;color:white">0,00 FC</div><div id="artMoy" style="font-size:11px;color:#22c55e;margin-top:4px">0 art/vente</div></div>
+</div>
+
+<!-- CAISSE -->
+<div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,rgba(250,204,21,0.12),rgba(34,197,94,0.08));border-color:rgba(250,204,21,0.25)">
+<div style="display:flex;justify-content:space-between;align-items:center"><h3 style="font-family:'Space Grotesk';font-size:13px">💰 MA CAISSE DU JOUR</h3><span id="statutRapport" style="font-size:10px;padding:4px 10px;border-radius:100px;background:rgba(255,255,255,0.1);font-weight:800">PAS ENVOYÉ</span></div>
+<div style="display:flex;gap:12px;margin-top:12px;text-align:left">
+<div style="flex:1"><div style="font-size:9px;color:#94a3b8">OUVERTURE</div><b id="caOuverture" style="font-size:15px">0 FC</b></div>
+<div style="flex:1"><div style="font-size:9px;color:#94a3b8">DÉPENSES</div><b id="caDepenses" style="font-size:15px;color:#f87171">0 FC</b></div>
+<div style="flex:1"><div style="font-size:9px;color:#94a3b8">THÉORIQUE</div><b id="caTheorique" style="font-size:15px;color:#22c55e">0 FC</b></div>
+<div style="flex:1"><div style="font-size:9px;color:#94a3b8">EN MAIN DÉCLARÉ</div><b id="caEnMain" style="font-size:15px;color:#facc15">—</b></div>
+</div>
+<div id="caDetail" style="font-size:11px;color:#94a3b8;margin-top:8px"></div>
+<button class="btn-caisse" onclick="window.location.href='caisse.html'">🔒 VOIR MA CAISSE / ENVOYER RAPPORT →</button>
+</div>
+
+<!-- PERFORMANCE VENDEUR : JOUR / MOIS / ANNÉE -->
+<div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,rgba(139,92,246,0.12),rgba(59,130,246,0.08));border-color:rgba(139,92,246,0.25)">
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+<h3 style="font-family:'Space Grotesk';font-size:13px">🏆 PERFORMANCE VENDEUR • <span id="perfNom">—</span></h3>
+<div style="display:flex;gap:6px">
+<button class="periode-btn active" id="btnJour" onclick="setPeriode('jour')">📅 JOUR</button>
+<button class="periode-btn" id="btnMois" onclick="setPeriode('mois')">📆 MOIS</button>
+<button class="periode-btn" id="btnAnnee" onclick="setPeriode('annee')">🗓️ ANNÉE</button>
+</div>
+</div>
+<div style="font-size:11px;color:#94a3b8;margin-top:6px">Période : <b id="perfPeriodeLabel" style="color:#fff">Aujourd'hui</b> • <span id="perfBadge" style="font-size:11px;padding:4px 10px;border-radius:100px;background:#22c55e;color:#000;font-weight:900">—</span></div>
+
+<!-- 3 RÉSUMÉS JOUR / MOIS / ANNÉE -->
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px;text-align:center">
+<div id="boxJour" style="background:rgba(139,92,246,0.2);border:2px solid #8b5cf6;border-radius:14px;padding:12px"><div style="font-size:9px;color:#c4b5fd">📅 AUJOURD'HUI</div><b id="perfJourCA" style="font-size:16px">0 FC</b><div id="perfJourNb" style="font-size:11px;color:#94a3b8">0 ventes</div><div id="perfJourRang" style="font-size:11px;color:#facc15;font-weight:800;margin-top:4px">—</div></div>
+<div id="boxMois" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:12px"><div style="font-size:9px;color:#94a3b8">📆 CE MOIS</div><b id="perfMoisCA" style="font-size:16px">0 FC</b><div id="perfMoisNb" style="font-size:11px;color:#94a3b8">0 ventes</div><div id="perfMoisRang" style="font-size:11px;color:#facc15;font-weight:800;margin-top:4px">—</div></div>
+<div id="boxAnnee" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:12px"><div style="font-size:9px;color:#94a3b8">🗓️ CETTE ANNÉE</div><b id="perfAnneeCA" style="font-size:16px">0 FC</b><div id="perfAnneeNb" style="font-size:11px;color:#94a3b8">0 ventes</div><div id="perfAnneeRang" style="font-size:11px;color:#facc15;font-weight:800;margin-top:4px">—</div></div>
+</div>
+
+<div style="display:flex;justify-content:space-between;margin-top:14px;font-size:12px"><span>Objectif <span id="perfObjectifLabel">du jour</span></span><b><span id="perfCA">0 FC</span> / <span id="perfObjectif">500 000 FC</span> • <span id="perfPct">0%</span></b></div>
+<div style="height:10px;background:rgba(255,255,255,0.1);border-radius:100px;margin-top:6px;overflow:hidden"><div id="perfBar" style="width:0%;height:100%;background:linear-gradient(90deg,#8b5cf6,#22c55e);border-radius:100px;transition:width 0.5s"></div></div>
+<div id="perfMsg" style="font-size:12px;color:#94a3b8;margin-top:6px"></div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:12px;text-align:center">
+<div style="background:rgba(255,255,255,0.06);border-radius:12px;padding:10px"><div style="font-size:9px;color:#94a3b8">TAUX VALIDATION</div><b id="perfTauxVal" style="font-size:16px;color:#22c55e">0%</b><div id="perfTauxValDetail" style="font-size:10px;color:#94a3b8">0 / 0</div></div>
+<div style="background:rgba(255,255,255,0.06);border-radius:12px;padding:10px"><div style="font-size:9px;color:#94a3b8">EN ATTENTE</div><b id="perfAttente" style="font-size:16px;color:#facc15">0</b><div id="perfAttenteFC" style="font-size:10px;color:#94a3b8">0 FC</div></div>
+<div style="background:rgba(255,255,255,0.06);border-radius:12px;padding:10px"><div style="font-size:9px;color:#94a3b8">RETOURS</div><b id="perfRetours" style="font-size:16px;color:#f87171">0</b><div id="perfRetoursFC" style="font-size:10px;color:#94a3b8">0 FC</div></div>
+<div style="background:rgba(255,255,255,0.06);border-radius:12px;padding:10px"><div style="font-size:9px;color:#94a3b8">PANIER MOYEN</div><b id="perfPanier" style="font-size:16px;color:#60a5fa">0 FC</b><div id="perfPanierDetail" style="font-size:10px;color:#94a3b8">—</div></div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">
+<div style="background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.3);border-radius:12px;padding:12px;text-align:center">
+<div style="font-size:10px;color:#60a5fa">📍 RANG DANS SON SITE • <span id="perfRankSiteLabel">JOUR</span></div>
+<b id="perfRankSite" style="font-size:20px">#1 / 1</b>
+<div id="perfDetailSite" style="font-size:11px;color:#94a3b8;margin-top:4px"></div>
+</div>
+<div style="background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.3);border-radius:12px;padding:12px;text-align:center">
+<div style="font-size:10px;color:#22c55e">🌍 RANG TOUS SITES • <span id="perfRankGlobalLabel">JOUR</span></div>
+<b id="perfRankGlobal" style="font-size:20px">#1 / 1</b>
+<div id="perfDetailGlobal" style="font-size:11px;color:#94a3b8;margin-top:4px"></div>
+</div>
+</div>
+<div style="display:flex;gap:8px;margin-top:8px">
+<div style="flex:1;background:rgba(255,255,255,0.06);border-radius:12px;padding:10px;text-align:center"><div style="font-size:10px;color:#94a3b8">MEILLEUR JOUR 7J</div><b id="perfBest" style="font-size:14px">0 FC</b></div>
+<div style="flex:1;background:rgba(255,255,255,0.06);border-radius:12px;padding:10px;text-align:center"><div style="font-size:10px;color:#94a3b8">TOTAL VENDEURS SYSTÈME</div><b id="perfTotalVendeurs" style="font-size:14px">0</b></div>
+</div>
+</div>
+
+<div class="gridPerf">
+<div class="card" style="background:linear-gradient(135deg,rgba(59,130,246,0.12),rgba(6,182,212,0.08));border-color:rgba(59,130,246,0.25)">
+<div style="font-size:9px;letter-spacing:1px;color:#60a5fa">PERF • SON SITE <span id="perfSite">VICTOIRE</span></div>
+<div style="display:flex;gap:8px;align-items:baseline;margin-top:8px"><span id="rankSite" style="font-family:'Space Grotesk';font-size:36px;font-weight:800">#1</span><span id="rankSiteTotal" style="color:#64748b;font-size:12px">/1</span><span style="margin-left:auto;padding:4px 10px;border-radius:100px;background:rgba(59,130,246,0.2);color:#60a5fa;font-size:10px;font-weight:800" id="badgeSite">👑 LEADER</span></div>
+<div style="height:6px;background:rgba(255,255,255,0.08);border-radius:10px;margin-top:10px"><div id="barSite" style="width:100%;height:100%;background:linear-gradient(90deg,#3b82f6,#06b6d4);border-radius:10px"></div></div>
+<div id="detailSite" style="font-size:10px;color:#64748b;margin-top:6px">—</div>
+</div>
+<div class="card" style="background:linear-gradient(135deg,rgba(34,197,94,0.12),rgba(22,163,74,0.08));border-color:rgba(34,197,94,0.25)">
+<div style="font-size:9px;letter-spacing:1px;color:#22c55e">PERF • TOUT LE SYSTEME</div>
+<div style="display:flex;gap:8px;align-items:baseline;margin-top:8px"><span id="rankGlobal" style="font-family:'Space Grotesk';font-size:36px;font-weight:800">#1</span><span id="rankGlobalTotal" style="color:#64748b;font-size:12px">/1</span><span style="margin-left:auto;padding:4px 10px;border-radius:100px;background:rgba(34,197,94,0.2);color:#22c55e;font-size:10px;font-weight:800" id="badgeGlobal">🏆 TOP</span></div>
+<div style="height:6px;background:rgba(255,255,255,0.08);border-radius:10px;margin-top:10px"><div id="barGlobal" style="width:100%;height:100%;background:linear-gradient(90deg,#22c55e,#16a34a);border-radius:10px"></div></div>
+<div id="detailGlobal" style="font-size:10px;color:#64748b;margin-top:6px">—</div>
+</div>
+</div>
+
+<div class="card" style="margin-bottom:14px">
+<div style="display:flex;justify-content:space-between;align-items:center">
+<h3 style="font-family:'Space Grotesk';font-size:13px;color:white">📊 Ventes 7 derniers jours • Validées</h3>
+<span id="total7j" style="font-size:11px;color:#64748b" class="mono">0 FC total</span>
+</div>
+<div id="chartBars" class="bars"></div>
+<div style="display:flex;gap:10px;margin-top:28px;font-size:10px;flex-wrap:wrap">
+<span style="padding:6px 12px;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.2);border-radius:100px;color:#22c55e">Moy: <b id="moy7j">0 FC</b>/j</span>
+<span style="padding:6px 12px;background:rgba(250,204,21,0.12);border:1px solid rgba(250,204,21,0.2);border-radius:100px;color:#facc15">▲ Meilleur: <b id="best7j">0 FC</b></span>
+<span style="padding:6px 12px;background:rgba(255,255,255,0.05);border-radius:100px;color:#94a3b8"><b id="ventesAuj">0</b> ventes validées auj.</span>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+<div class="card">
+<h3 style="font-family:'Space Grotesk';font-size:12px;color:white;margin-bottom:10px">Top produits du jour • Validés</h3>
+<div id="topProd"></div>
+</div>
+<div class="card">
+<h3 style="font-family:'Space Grotesk';font-size:12px;color:white;margin-bottom:10px">Dernières ventes validées</h3>
+<div id="lastVentes"></div>
+</div>
+</div>
+
+<button class="btn-vente" onclick="window.location.href='vente.html'">🛒 ALLER A LA VENTE →</button>
+
+<script>
+let PERIODE = 'jour'; // jour | mois | annee
+function setPeriode(p){
+  PERIODE = p;
+  document.querySelectorAll('.periode-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(p==='jour'?'btnJour':p==='mois'?'btnMois':'btnAnnee').classList.add('active');
+  initDashboard();
+}
+function fmtFC(n){ return Number(n||0).toLocaleString('fr-FR',{minimumFractionDigits:2}) + ' FC'; }
+function getMe(){
+  try{
+    let u = JSON.parse(localStorage.getItem('user')||'{}');
+    let uid = localStorage.getItem('dub_current_user_id')||u.id||u.userId||'';
+    let site = u.siteId||u.siteName||'victoire';
+    if(!u.siteId){
+      let users = JSON.parse(localStorage.getItem('dub_users')||'[]');
+      let me = users.find(x=>String(x.id)===String(uid));
+      if(me) site = me.siteId||me.siteName||site;
+    }
+    return {id:String(uid||''), site:site, nom:u.nom||u.name||u.username||'VENDEUR'};
+  }catch(e){ return {id:'',site:'victoire',nom:'VENDEUR'} }
+}
+function getVentes(){ try{ return JSON.parse(localStorage.getItem('dub_ventes')||'[]'); }catch(e){ return []; } }
+function estValidee(v){
+  let s = String(v.statut||v.status||v.etat||v.validation||'').toLowerCase().trim();
+  if(!s) return true;
+  if(['valide','validé','validee','validated','confirmé','confirme','confirmed','payé','paye','paid','terminé','termine','done','livré','livre','accepté','accepte','clôturé','cloture'].includes(s)) return true;
+  if(['brouillon','draft','en attente','attente','pending','en cours','annulé','annule','cancelled','canceled','refusé','refuse','rejected','supprimé','supprime','deleted','retour','retourné'].includes(s)) return false;
+  if(v.valide===true || v.validated===true || v.isValidated===true) return true;
+  if(v.valide===false || v.validated===false) return false;
+  return true;
+}
+function estEnAttente(v){
+  let s = String(v.statut||v.status||v.etat||'').toLowerCase();
+  return ['brouillon','draft','en attente','attente','pending','en cours'].includes(s);
+}
+function getMontantVente(v){
+  if(v.valeurPV!=null) return Number(v.valeurPV);
+  if(v.total!=null) return Number(v.total);
+  if(v.montant!=null) return Number(v.montant);
+  if(v.valeur!=null) return Number(v.valeur);
+  if(v.pv!=null && v.qte!=null) return Number(v.pv)*Number(v.qte);
+  if(v.pv!=null && v.qty!=null) return Number(v.pv)*Number(v.qty);
+  return 0;
+}
+function getQteVente(v){
+  if(v.qte!=null) return Number(v.qte);
+  if(v.qty!=null) return Number(v.qty);
+  if(v.quantite!=null) return Number(v.quantite);
+  return 1;
+}
+function getDateVente(v){
+  let d = v.date || v.createdAt || v.heure || '';
+  if(typeof d==='number') d = new Date(d).toISOString();
+  return String(d);
+}
+function getSiteVente(v){ return String(v.siteId||v.site_id||v.site||'').toLowerCase(); }
+function getVendeurVente(v){ return String(v.vendeurId||v.vendeur||v.userId||v.vendeurNom||''); }
+function cleVendeur(v){
+  let id = String(v.vendeurId||v.userId||'').trim();
+  let nom = String(v.vendeur||v.vendeurNom||v.vendeurName||'').trim();
+  if(id) return 'ID:'+id;
+  if(nom) return 'NOM:'+nom.toUpperCase();
+  return 'INCONNU';
+}
+function nomVendeur(v){ return v.vendeurNom||v.vendeur||v.vendeurName||v.vendeurId||'Vendeur'; }
+function siteVendeur(v){ return String(v.siteId||v.site_id||v.site||v.siteName||'').toLowerCase() || 'inconnu'; }
+// ✅ FILTRE PÉRIODE : jour / mois / année en cours
+function dansPeriode(dateStr, periode, ref){
+  let d = String(dateStr||'').slice(0,10); // YYYY-MM-DD
+  if(!d) return false;
+  if(periode==='jour') return d===ref.jour || d===ref.jourLocal;
+  if(periode==='mois') return d.slice(0,7)===ref.mois;
+  if(periode==='annee') return d.slice(0,4)===ref.annee;
+  return false;
+}
+
+function initDashboard(){
+  let ME = getMe();
+  let SITE_ID = ME.site;
+  let SITE = String(SITE_ID).toUpperCase();
+  document.getElementById('siteName').innerText=SITE;
+  document.getElementById('perfSite').innerText=SITE;
+  document.getElementById('userLabel').innerText='VENDEUR • '+ME.nom+' • '+SITE;
+
+  let TAUX = 2800;
+  try{
+    let m = JSON.parse(localStorage.getItem('dub_taux_map')||'{}');
+    TAUX = parseFloat(m[SITE_ID]||m[SITE.toLowerCase()]||localStorage.getItem('dub_taux')||localStorage.getItem('BENZENE_TAUX')||2800);
+  }catch(e){}
+  document.getElementById('tauxH').innerText=TAUX.toLocaleString();
+  document.getElementById('tauxJour').innerText=TAUX.toLocaleString()+' FC';
+  document.getElementById('tauxDetail').innerText=TAUX.toLocaleString();
+
+  let now = new Date();
+  let REF = {
+    jour: now.toISOString().slice(0,10),
+    jourLocal: new Date(now.getTime()+60*60*1000).toISOString().slice(0,10),
+    mois: now.toISOString().slice(0,7), // YYYY-MM
+    annee: now.toISOString().slice(0,4) // YYYY
+  };
+  let labelMois = now.toLocaleDateString('fr-FR',{month:'long', year:'numeric'});
+  let labelAnnee = REF.annee;
+
+  let all = getVentes();
+  let mineSite = all.filter(v=> getSiteVente(v)===String(SITE_ID).toLowerCase() || getSiteVente(v)==='');
+  let mine = mineSite.length>0 ? mineSite : all;
+  let avecVendeur = mine.filter(v=> getVendeurVente(v)!=='');
+  if(avecVendeur.length>0 && ME.id){
+    let perso = mine.filter(v=> getVendeurVente(v)===String(ME.id) || getVendeurVente(v)===ME.nom);
+    if(perso.length>0) mine = perso;
+  }
+  let validees = mine.filter(v=> estValidee(v));
+  let enAttente = mine.filter(v=> estEnAttente(v));
+  let annulees = mine.filter(v=> !estValidee(v) && !estEnAttente(v));
+
+  function grouper(list){
+    let map={};
+    list.forEach(v=>{
+      let tid = v.transactionId || v.idVente || v.venteId || v.id || v.commandeId || null;
+      let key = tid ? 'TX_'+tid : 'LIGNE_'+Math.random().toString(36).slice(2,8);
+      if(!tid){
+        map[key]={date:getDateVente(v), client:v.client||'Client', totalFC:getMontantVente(v), totalQte:getQteVente(v), items:[v]};
+      } else {
+        if(!map[key]) map[key]={date:getDateVente(v), client:v.client||'Client', totalFC:0, totalQte:0, items:[]};
+        map[key].totalFC += getMontantVente(v);
+        map[key].totalQte += getQteVente(v);
+        map[key].items.push(v);
+      }
+    });
+    return Object.values(map).sort((a,b)=> new Date(b.date)-new Date(a.date));
+  }
+  let grouped = grouper(validees);
+  let groupedAttente = grouper(enAttente);
+
+  // --- KPI JOUR (toujours jour pour le haut) ---
+  let jour = grouped.filter(g=> dansPeriode(g.date,'jour',REF));
+  let jourAttente = groupedAttente.filter(g=> dansPeriode(g.date,'jour',REF));
+  let caJour = jour.reduce((s,g)=>s+g.totalFC,0);
+  let nbVentes = jour.length;
+  let totalArticles = jour.reduce((s,g)=>s+g.totalQte,0);
+  let caAttente = jourAttente.reduce((s,g)=>s+g.totalFC,0);
+
+  document.getElementById('caJour').innerText=fmtFC(caJour);
+  document.getElementById('nbVentes').innerText=nbVentes;
+  document.getElementById('nbClients').innerText=totalArticles+' articles • '+nbVentes+' validées • '+jourAttente.length+' en attente ('+fmtFC(caAttente)+')';
+  document.getElementById('panierMoy').innerText=nbVentes?fmtFC(caJour/nbVentes):'0,00 FC';
+  document.getElementById('artMoy').innerText=nbVentes?(totalArticles/nbVentes).toFixed(1)+' art/vente':'0 art/vente';
+  document.getElementById('ventesAuj').innerText=nbVentes;
+
+  let hier = new Date(); hier.setDate(hier.getDate()-1);
+  let hierStr = hier.toISOString().slice(0,10);
+  let caHier = grouped.filter(g=>(g.date||'').slice(0,10)===hierStr).reduce((s,g)=>s+g.totalFC,0);
+  let evol = caHier>0 ? Math.round(((caJour-caHier)/caHier)*100) : (caJour>0?100:0);
+  document.getElementById('caEvol').innerText=(caJour>=caHier?'▲ ':'▼ ')+Math.abs(evol)+'% vs hier • Validées uniquement';
+
+  let keyCaisse = 'dub_caisse_'+String(SITE_ID).toLowerCase()+'_'+REF.jour;
+  let caisse = {ouverture:0, depenses:[]};
+  try{ caisse = JSON.parse(localStorage.getItem(keyCaisse)||'{"ouverture":0,"depenses":[]}'); }catch(e){}
+  let totalDep = 0;
+  if(caisse.depenses) totalDep = caisse.depenses.reduce((s,d)=>s+Number(d.montant||0),0);
+  if(caisse.ops) totalDep += caisse.ops.filter(o=>o.type==='depense'||o.type==='retrait').reduce((s,o)=>s+Number(o.montant||0),0);
+  let theorique = Number(caisse.ouverture||0) + caJour - totalDep;
+  document.getElementById('caOuverture').innerText=fmtFC(caisse.ouverture||0);
+  document.getElementById('caDepenses').innerText=fmtFC(totalDep);
+  document.getElementById('caTheorique').innerText=fmtFC(theorique);
+  document.getElementById('caDetail').innerText=`${fmtFC(caisse.ouverture||0)} ouverture + ${fmtFC(caJour)} ventes VALIDÉES - ${fmtFC(totalDep)} dépenses = ${fmtFC(theorique)} théorique`;
+  let rapports=[]; try{ rapports=JSON.parse(localStorage.getItem('dub_rapports_caisse')||'[]'); }catch(e){}
+  let monRapport = rapports.find(r=> String(r.vendeurId)===String(ME.id) && r.date===REF.jour);
+  if(monRapport){
+    document.getElementById('caEnMain').innerText=fmtFC(monRapport.argentMain);
+    document.getElementById('statutRapport').innerText='✅ RAPPORT ENVOYÉ';
+    document.getElementById('statutRapport').style.background='rgba(34,197,94,0.2)'; document.getElementById('statutRapport').style.color='#22c55e';
+  } else {
+    document.getElementById('caEnMain').innerText='—';
+    document.getElementById('statutRapport').innerText='PAS ENVOYÉ';
+    document.getElementById('statutRapport').style.background='rgba(255,255,255,0.1)'; document.getElementById('statutRapport').style.color='#fff';
+  }
+
+  // ===== PERFORMANCE : JOUR / MOIS / ANNÉE =====
+  let allValidees = all.filter(v=> estValidee(v));
+  function classementVendeurs(liste, filtreSite){
+    let map = {};
+    liste.forEach(v=>{
+      if(filtreSite && siteVendeur(v) !== String(filtreSite).toLowerCase()) return;
+      let cle = cleVendeur(v);
+      if(!map[cle]) map[cle]={cle:cle, nom:nomVendeur(v), site:siteVendeur(v), ca:0, nb:0, qte:0};
+      map[cle].ca += getMontantVente(v);
+      map[cle].qte += getQteVente(v);
+      let tid = v.transactionId||v.idVente||v.venteId||v.id||v.commandeId;
+      if(tid){ if(!map[cle]._tx) map[cle]._tx=new Set(); if(!map[cle]._tx.has(tid)){ map[cle]._tx.add(tid); map[cle].nb++; } }
+      else map[cle].nb++;
+    });
+    let arr = Object.values(map).map(x=>{ delete x._tx; return x; });
+    return arr.sort((a,b)=> b.ca - a.ca || b.nb - a.nb);
+  }
+  function perfPourPeriode(periode){
+    let liste = allValidees.filter(v=> dansPeriode(getDateVente(v), periode, REF));
+    let clSite = classementVendeurs(liste, SITE_ID);
+    let clGlobal = classementVendeurs(liste, null);
+    let MA_CLE = ME.id ? 'ID:'+String(ME.id) : 'NOM:'+String(ME.nom).toUpperCase();
+    let moiSite = clSite.find(x=> x.cle===MA_CLE) || clSite.find(x=> x.nom.toUpperCase()===String(ME.nom).toUpperCase()) || {cle:MA_CLE, ca:0, nb:0, nom:ME.nom, site:String(SITE_ID).toLowerCase()};
+    let moiGlobal = clGlobal.find(x=> x.cle===MA_CLE) || clGlobal.find(x=> x.nom.toUpperCase()===String(ME.nom).toUpperCase()) || {cle:MA_CLE, ca:0, nb:0, nom:ME.nom};
+    // Si mes ventes n'ont pas de vendeurId, on prend mon CA perso calculé pour cette période
+    let monGrouped = grouped.filter(g=> dansPeriode(g.date, periode, REF));
+    if(moiSite.ca===0 && monGrouped.length>0){ moiSite.ca = monGrouped.reduce((s,g)=>s+g.totalFC,0); moiSite.nb = monGrouped.length; }
+    if(moiGlobal.ca===0 && monGrouped.length>0){ moiGlobal.ca = monGrouped.reduce((s,g)=>s+g.totalFC,0); moiGlobal.nb = monGrouped.length; }
+    let rankS = clSite.findIndex(x=> x.cle===moiSite.cle || x.nom===moiSite.nom)+1 || 1;
+    let rankG = clGlobal.findIndex(x=> x.cle===moiGlobal.cle || x.nom===moiGlobal.nom)+1 || 1;
+    // Si je ne suis pas dans le classement car pas de vendeurId, je suis quand même classé par mon CA
+    if(!clSite.find(x=> x.cle===moiSite.cle || x.nom===moiSite.nom)){
+      let plusFort = clSite.filter(x=> x.ca > moiSite.ca).length;
+      rankS = plusFort+1;
+    }
+    if(!clGlobal.find(x=> x.cle===moiGlobal.cle || x.nom===moiGlobal.nom)){
+      let plusFort = clGlobal.filter(x=> x.ca > moiGlobal.ca).length;
+      rankG = plusFort+1;
+    }
+    return {ca:moiSite.ca, nb:moiSite.nb, qte:monGrouped.reduce((s,g)=>s+g.totalQte,0), rankSite:rankS, totalSite:Math.max(1,clSite.length), leaderSite:clSite[0]||{ca:0,nom:'—'}, rankGlobal:rankG, totalGlobal:Math.max(1,clGlobal.length), leaderGlobal:clGlobal[0]||{ca:0,nom:'—',site:'—'}, clSite, clGlobal};
+  }
+
+  let perfJour = perfPourPeriode('jour');
+  let perfMois = perfPourPeriode('mois');
+  let perfAnnee = perfPourPeriode('annee');
+
+  // Boîtes résumé
+  document.getElementById('perfJourCA').innerText = fmtFC(perfJour.ca);
+  document.getElementById('perfJourNb').innerText = perfJour.nb+' ventes • '+perfJour.qte+' art';
+  document.getElementById('perfJourRang').innerText = '#'+perfJour.rankGlobal+' global • #'+perfJour.rankSite+' site';
+  document.getElementById('perfMoisCA').innerText = fmtFC(perfMois.ca);
+  document.getElementById('perfMoisNb').innerText = perfMois.nb+' ventes • '+perfMois.qte+' art';
+  document.getElementById('perfMoisRang').innerText = '#'+perfMois.rankGlobal+' global • #'+perfMois.rankSite+' site';
+  document.getElementById('perfAnneeCA').innerText = fmtFC(perfAnnee.ca);
+  document.getElementById('perfAnneeNb').innerText = perfAnnee.nb+' ventes • '+perfAnnee.qte+' art';
+  document.getElementById('perfAnneeRang').innerText = '#'+perfAnnee.rankGlobal+' global • #'+perfAnnee.rankSite+' site';
+
+  // Période sélectionnée
+  let perf = PERIODE==='jour' ? perfJour : PERIODE==='mois' ? perfMois : perfAnnee;
+  let labelPeriode = PERIODE==='jour' ? "Aujourd'hui" : PERIODE==='mois' ? labelMois : 'Année '+labelAnnee;
+  let objectif = PERIODE==='jour' ? 500000 : PERIODE==='mois' ? 10000000 : 120000000;
+  try{ let o = JSON.parse(localStorage.getItem('dub_objectifs')||'{}'); if(o[ME.id+'_'+PERIODE]||o[ME.id]) objectif = Number(o[ME.id+'_'+PERIODE]||o[ME.id]||objectif); }catch(e){}
+  let labelObj = PERIODE==='jour' ? 'du jour' : PERIODE==='mois' ? 'du mois' : "de l'année";
+  let pct = objectif>0 ? Math.min(100, Math.round((perf.ca/objectif)*100)) : 0;
+
+  document.getElementById('perfNom').innerText = ME.nom + ' • ' + SITE;
+  document.getElementById('perfPeriodeLabel').innerText = labelPeriode;
+  document.getElementById('perfObjectifLabel').innerText = labelObj;
+  document.getElementById('perfCA').innerText = fmtFC(perf.ca);
+  document.getElementById('perfObjectif').innerText = fmtFC(objectif);
+  document.getElementById('perfPct').innerText = pct+'%';
+  document.getElementById('perfBar').style.width = pct+'%';
+  document.getElementById('perfMsg').innerText = pct>=100 ? '🎉 Objectif '+labelObj+' atteint ! Bravo !' : pct>=70 ? '🔥 Plus que '+fmtFC(objectif-perf.ca)+' pour atteindre l’objectif '+labelObj : pct>=30 ? '💪 Bon début, continue' : '🚀 Il reste '+fmtFC(objectif-perf.ca)+' pour l’objectif '+labelObj;
+  document.getElementById('perfBadge').innerText = pct>=100 ? '🏆 OBJECTIF ATTEINT' : pct>=70 ? '🔥 PRESQUE' : pct>=30 ? '💪 EN COURS' : '🚀 DÉMARRAGE';
+  document.getElementById('perfBadge').style.background = pct>=100 ? '#facc15' : '#22c55e';
+
+  // Surbrillance boîte active
+  ['Jour','Mois','Annee'].forEach(n=>{ let el=document.getElementById('box'+n); el.style.border='1px solid rgba(255,255,255,0.1)'; el.style.background='rgba(255,255,255,0.06)'; });
+  let boxActive = PERIODE==='jour' ? 'boxJour' : PERIODE==='mois' ? 'boxMois' : 'boxAnnee';
+  document.getElementById(boxActive).style.border='2px solid #8b5cf6'; document.getElementById(boxActive).style.background='rgba(139,92,246,0.2)';
+  document.getElementById('perfRankSiteLabel').innerText = PERIODE.toUpperCase();
+  document.getElementById('perfRankGlobalLabel').innerText = PERIODE.toUpperCase();
+
+  // Taux validation pour la période
+  let valideesPeriode = validees.filter(v=> dansPeriode(getDateVente(v), PERIODE, REF));
+  let attentePeriode = enAttente.filter(v=> dansPeriode(getDateVente(v), PERIODE, REF));
+  let annuleesPeriode = annulees.filter(v=> dansPeriode(getDateVente(v), PERIODE, REF));
+  let totalTout = valideesPeriode.length + attentePeriode.length + annuleesPeriode.length;
+  let tauxVal = totalTout>0 ? Math.round((valideesPeriode.length/totalTout)*100) : 100;
+  document.getElementById('perfTauxVal').innerText = tauxVal+'%';
+  document.getElementById('perfTauxValDetail').innerText = valideesPeriode.length+' / '+totalTout+' ventes';
+  document.getElementById('perfTauxVal').style.color = tauxVal>=90 ? '#22c55e' : tauxVal>=70 ? '#facc15' : '#f87171';
+  let attenteGrouped = groupedAttente.filter(g=> dansPeriode(g.date, PERIODE, REF));
+  let caAttentePeriode = attenteGrouped.reduce((s,g)=>s+g.totalFC,0);
+  document.getElementById('perfAttente').innerText = attenteGrouped.length;
+  document.getElementById('perfAttenteFC').innerText = fmtFC(caAttentePeriode);
+  let retours = [];
+  try{ retours = JSON.parse(localStorage.getItem('dub_retours')||'[]'); }catch(e){}
+  let retoursPeriode = retours.filter(r=> dansPeriode(r.date||'', PERIODE, REF) && (String(r.vendeurId||'')===String(ME.id) || String(r.vendeur||'').toUpperCase()===String(ME.nom).toUpperCase()));
+  document.getElementById('perfRetours').innerText = retoursPeriode.length;
+  document.getElementById('perfRetoursFC').innerText = fmtFC(retoursPeriode.reduce((s,r)=>s+Number(r.montant||r.total||0),0));
+  document.getElementById('perfPanier').innerText = perf.nb ? fmtFC(perf.ca/perf.nb) : '0,00 FC';
+  document.getElementById('perfPanierDetail').innerText = perf.nb ? perf.qte+' art • '+(perf.qte/perf.nb).toFixed(1)+' art/vente' : '—';
+
+  document.getElementById('perfRankSite').innerText = '#'+perf.rankSite+' / '+perf.totalSite;
+  document.getElementById('perfRankGlobal').innerText = '#'+perf.rankGlobal+' / '+perf.totalGlobal;
+  document.getElementById('perfDetailSite').innerText = 'Leader: '+perf.leaderSite.nom+' • '+fmtFC(perf.leaderSite.ca);
+  document.getElementById('perfDetailGlobal').innerText = 'Leader: '+perf.leaderGlobal.nom+' ('+String(perf.leaderGlobal.site||'').toUpperCase()+') • '+fmtFC(perf.leaderGlobal.ca);
+  document.getElementById('perfTotalVendeurs').innerText = perf.totalGlobal+' vendeurs';
+
+  document.getElementById('rankSite').innerText = '#'+perf.rankSite;
+  document.getElementById('rankSiteTotal').innerText = '/'+perf.totalSite+' vendeurs';
+  document.getElementById('badgeSite').innerText = perf.rankSite===1 ? '👑 LEADER SITE' : '#'+perf.rankSite+' SITE';
+  document.getElementById('barSite').style.width = (perf.leaderSite.ca>0 ? Math.round((perf.ca/perf.leaderSite.ca)*100) : 100)+'%';
+  document.getElementById('detailSite').innerText = 'Toi '+fmtFC(perf.ca)+' • Leader '+perf.leaderSite.nom+' '+fmtFC(perf.leaderSite.ca)+' • '+perf.totalSite+' vendeurs à '+SITE+' • '+labelPeriode;
+  document.getElementById('rankGlobal').innerText = '#'+perf.rankGlobal;
+  document.getElementById('rankGlobalTotal').innerText = '/'+perf.totalGlobal+' vendeurs';
+  document.getElementById('badgeGlobal').innerText = perf.rankGlobal===1 ? '🏆 TOP 1 GLOBAL' : perf.rankGlobal<=3 ? '🏆 TOP '+perf.rankGlobal+' GLOBAL' : '#'+perf.rankGlobal+' GLOBAL';
+  document.getElementById('barGlobal').style.width = (perf.leaderGlobal.ca>0 ? Math.round((perf.ca/perf.leaderGlobal.ca)*100) : 100)+'%';
+  document.getElementById('detailGlobal').innerText = 'Toi '+fmtFC(perf.ca)+' • Leader '+perf.leaderGlobal.nom+' ('+String(perf.leaderGlobal.site||'').toUpperCase()+') '+fmtFC(perf.leaderGlobal.ca)+' • '+perf.totalGlobal+' vendeurs tous sites • '+labelPeriode;
+
+  let chart=document.getElementById('chartBars');
+  let total7=0, max7=1, vals=[];
+  for(let i=6;i>=0;i--){
+    let d=new Date(); d.setDate(d.getDate()-i);
+    let ds=d.toISOString().slice(0,10);
+    let ca=grouped.filter(g=>(g.date||'').slice(0,10)===ds).reduce((s,g)=>s+g.totalFC,0);
+    vals.push({date:d,ca}); total7+=ca; if(ca>max7)max7=ca;
+  }
+  let html='';
+  vals.forEach((v,i)=>{
+    let h=Math.max(8, Math.round((v.ca/max7)*100));
+    let label=v.date.toLocaleDateString('fr-FR',{weekday:'short'}).slice(0,3).toUpperCase();
+    let isToday=i==6;
+    html+='<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px"><div style="font-size:9px;color:'+(isToday?'#facc15':'#22c55e')+'" class="mono">'+Math.round(v.ca).toLocaleString()+'</div><div class="bar" style="width:100%;height:'+h+'px"></div><div style="font-size:9px;color:'+(isToday?'#facc15':'#64748b')+'">'+label+'</div></div>';
+  });
+  chart.innerHTML=html;
+  document.getElementById('total7j').innerText=fmtFC(total7)+' total validé';
+  document.getElementById('moy7j').innerText=fmtFC(total7/7);
+  document.getElementById('best7j').innerText=fmtFC(max7);
+
+  let prodMap={};
+  jour.forEach(g=> g.items.forEach(it=>{
+    let k=(it.produit||it.nom||'PRODUIT').toUpperCase();
+    if(!prodMap[k]) prodMap[k]={nom:it.produit||it.nom||'Produit', qte:0, total:0};
+    prodMap[k].qte += getQteVente(it);
+    prodMap[k].total += getMontantVente(it);
+  }));
+  let top = Object.values(prodMap).sort((a,b)=>b.qte-a.qte).slice(0,5);
+  document.getElementById('topProd').innerHTML = top.length ? top.map((p,i)=> '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);font-size:12px"><span style="flex:1;padding-right:8px">'+(i+1)+'. '+p.nom+'</span><b style="white-space:nowrap">'+p.qte+' x • '+fmtFC(p.total)+'</b></div>').join('') : '<div style="color:#64748b;font-size:12px">Aucune vente validée aujourd\'hui</div>';
+
+  document.getElementById('lastVentes').innerHTML = grouped.slice(0,5).map(g=> '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);font-size:12px"><span>'+(g.client||'Client')+' • '+g.totalQte+' art<br><small style="color:#64748b">'+new Date(g.date).toLocaleString('fr-FR')+'</small></span><b style="color:#22c55e;white-space:nowrap">'+fmtFC(g.totalFC)+' ✅</b></div>').join('') || '<div style="color:#64748b;font-size:12px">Aucune vente validée</div>';
+  if(jourAttente.length>0){
+    document.getElementById('lastVentes').innerHTML += `<div style="margin-top:10px;background:rgba(250,204,21,0.1);border:1px solid rgba(250,204,21,0.3);padding:10px;border-radius:10px;font-size:12px;color:#facc15">⏳ ${jourAttente.length} vente(s) en attente - ${fmtFC(caAttente)} NON comptées dans le CA</div>`;
+  }
+
+  setInterval(()=>{let h=document.getElementById('heure');if(h)h.innerText=new Date().toLocaleTimeString()},1000);
+}
+initDashboard();
+setInterval(initDashboard, 5000);
+</script>
+</body>
+</html>

@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DUBENZENE - Gerant Site</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#05070a;color:white;font-family:Arial,sans-serif;padding:14px;padding-bottom:90px}
+.card{background:#111827;border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:16px}
+.kpi{background:#111827;border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:16px}
+.pill{padding:7px 12px;border-radius:100px;font-size:11px;font-weight:800;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05)}
+.dot{width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:900px){.grid4{grid-template-columns:1fr 1fr}.grid2{grid-template-columns:1fr}}
+.btn{padding:12px 16px;border-radius:12px;border:none;font-weight:800;cursor:pointer;width:100%}
+.btn-green{background:#22c55e;color:#000}
+.btn-white{background:#fff;color:#000}
+.btn-ghost{background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.12);padding:10px 14px;border-radius:12px;font-weight:700;cursor:pointer}
+.filter{display:flex;gap:8px;margin:14px 0;overflow-x:auto}
+.filter button{flex:1;min-width:90px;padding:11px;border-radius:100px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:#94a3b8;font-weight:800;cursor:pointer}
+.filter button.on{background:#22c55e;color:#000;border-color:#22c55e}
+select,input.search{width:100%;background:#000;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:12px;color:#fff;outline:none;margin-bottom:10px}
+.progress{height:8px;background:rgba(255,255,255,.08);border-radius:10px;margin-top:8px;overflow:hidden}
+.progress>div{height:100%;border-radius:10px}
+.chart-photo{background:#fff;border-radius:18px;padding:18px 16px 12px;color:#111;margin-bottom:14px}
+.bars-photo{display:flex;align-items:end;gap:14px;height:220px;margin-top:18px}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;height:100%;justify-content:end}
+.bar-val{font-size:11px;font-weight:800;color:#111;white-space:nowrap}
+.bar-box{width:100%;background:#166534;border-radius:6px 6px 0 0;min-height:6px}
+.bar-box.today{background:#22c55e}
+.bar-day{font-size:12px;color:#475569;font-weight:600}
+.pie-wrap{display:flex;gap:14px;align-items:center}
+.pie-svg{width:130px;height:130px;flex-shrink:0;transform:rotate(-90deg)}
+.pie-legend{flex:1;display:flex;flex-direction:column;gap:8px}
+.pie-item{display:flex;align-items:center;gap:8px;font-size:12px}
+.pie-color{width:12px;height:12px;border-radius:4px;flex-shrink:0}
+.badge{padding:5px 10px;border-radius:100px;font-size:10px;font-weight:800}
+.row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px;gap:10px}
+</style>
+</head>
+<body>
+
+<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+  <div style="display:flex;gap:12px;align-items:center"><div style="width:46px;height:46px;border-radius:14px;background:#facc15;display:flex;align-items:center;justify-content:center;font-size:22px">G</div><div><h1 style="font-size:19px">DUBENZENE <span style="color:#22c55e" id="siteName">MON SITE</span></h1><div style="font-size:10px;color:#64748b" id="gerantName">GERANT - MON SITE UNIQUEMENT</div></div></div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <!-- ✅ AJOUT - LE GERANT VOIT LE TAUX DU SITE -->
+    <div class="pill" id="pillTauxGerant" style="background:#f59e0b;color:#000;border:none">💱 TAUX: <span id="tauxHGerant">Non fixé</span></div>
+    <div class="pill"><span class="dot"></span> MON SITE</div><div class="pill" id="heure">--:--</div><button class="btn-ghost" onclick="exportCSV()">Export CSV</button>
+  </div>
+</div>
+
+<div style="background:#111;padding:10px;border-radius:10px;font-size:11px;color:#94a3b8;margin-top:12px">Connecte : <b id="debugGerant" style="color:#fff">...</b> | Site : <b id="debugSite" style="color:#22c55e">...</b> | Ventes trouvees : <b id="debugNb" style="color:#facc15">...</b></div>
+
+<!-- ✅ AJOUT - CHANGER LE TAUX DU SITE -->
+<div class="card" style="margin-top:12px;background:linear-gradient(135deg,rgba(245,158,11,.15),rgba(34,197,94,.08));border-color:rgba(245,158,11,.3)">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+    <div><h3 style="font-size:14px">💱 TAUX COMPTOIR DU SITE</h3><div style="font-size:12px;color:#94a3b8;margin-top:4px">Ce taux sera vu par tous tes vendeurs : Dashboard + Panier</div><div id="tauxActuelGerant" style="font-size:14px;font-weight:800;color:#facc15;margin-top:6px">Non fixé</div></div>
+    <div style="display:flex;gap:8px;flex:1;min-width:260px;max-width:420px">
+      <input id="inputTauxGerant" type="number" placeholder="Ex: 2800" style="flex:1;background:#000;border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:12px;color:#fff;font-weight:800;font-size:16px;outline:none">
+      <button onclick="changerTauxGerant()" style="padding:12px 18px;background:#f59e0b;color:#000;border:none;border-radius:12px;font-weight:800;cursor:pointer;white-space:nowrap">ENREGISTRER</button>
+    </div>
+  </div>
+</div>
+
+<div class="filter">
+  <button id="fJour" class="on" onclick="setPeriode('jour')">AUJOURD HUI</button>
+  <button id="f7j" onclick="setPeriode('7j')">7 JOURS</button>
+  <button id="fMois" onclick="setPeriode('mois')">CE MOIS</button>
+  <button onclick="copierRapport()">COPIER RAPPORT</button>
+</div>
+
+<div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+  <select id="filtreVendeur" onchange="initDashboard()" style="flex:1;min-width:160px;margin:0"><option value="tous">Tous mes vendeurs</option></select>
+  <input id="searchVente" class="search" placeholder="Chercher client, vendeur..." oninput="initDashboard()" style="flex:2;min-width:200px;margin:0">
+</div>
+
+<div class="grid4">
+  <div class="kpi"><div style="font-size:10px;color:#94a3b8">CA MON SITE - <span id="labelPeriode">JOUR</span></div><div id="caTotal" style="font-size:24px;font-weight:800;margin-top:6px">0,00 FC</div><div id="caEvol" style="font-size:11px;color:#22c55e;margin-top:4px">-</div><div style="font-size:11px;color:#94a3b8;margin-top:4px" id="caHierTxt">Hier: 0 FC</div></div>
+  <div class="kpi"><div style="font-size:10px;color:#94a3b8">VENTES - MES VENDEURS</div><div id="nbVentes" style="font-size:24px;font-weight:800;margin-top:6px">0</div><div id="nbArticles" style="font-size:11px;color:#94a3b8;margin-top:4px">0 articles</div><div id="panierMoyTxt" style="font-size:11px;color:#22c55e;margin-top:4px">Panier moyen: 0 FC</div></div>
+  <div class="kpi"><div style="font-size:10px;color:#94a3b8">STOCK - MON SITE</div><div id="stockAlert" style="font-size:24px;font-weight:800;margin-top:6px;color:#f87171">0</div><div id="stockTxt" style="font-size:11px;color:#94a3b8;margin-top:4px">0 en rupture - 0 faible</div><div style="font-size:11px;color:#facc15;margin-top:4px" id="stockValeur">Valeur stock: 0 FC</div></div>
+  <div class="kpi"><div style="font-size:10px;color:#94a3b8">CAISSE - MES VENDEURS</div><div id="caisseTxt" style="font-size:24px;font-weight:800;margin-top:6px">0 / 0</div><div id="caisseDetail" style="font-size:11px;color:#94a3b8;margin-top:4px">rapports envoyes</div><div id="ecartTxt" style="font-size:11px;color:#22c55e;margin-top:4px">Ecart: 0 FC</div></div>
+</div>
+
+<div class="chart-photo">
+  <div style="display:flex;justify-content:space-between"><div><h3 style="color:#111">Revenus de la semaine - <span id="siteName2">MON SITE</span></h3><p style="color:#64748b;font-size:11px">Evolution du chiffre d affaires en FC</p></div><span id="total7j" style="font-size:12px;color:#64748b;font-weight:700">0 FC</span></div>
+  <div id="barsPhoto" class="bars-photo"></div>
+  <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap"><span style="padding:6px 12px;background:#dcfce7;border-radius:100px;color:#166534;font-size:11px">Moy: <b id="moy7j">0 FC</b>/j</span><span style="padding:6px 12px;background:#fef9c3;border-radius:100px;color:#854d0e;font-size:11px">Meilleur: <b id="best7j">0 FC</b></span><span style="padding:6px 12px;background:#f1f5f9;border-radius:100px;color:#475569;font-size:11px" id="ventesAujTxt">0 ventes</span></div>
+</div>
+
+<div class="grid2">
+  <div class="card">
+    <h3 style="font-size:13px">Camembert - CA par Vendeur de mon site</h3>
+    <div style="margin-top:14px" class="pie-wrap">
+      <div style="position:relative"><svg id="pieSvg" class="pie-svg" viewBox="0 0 120 120"></svg><div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center"><div style="font-size:9px;color:#94a3b8">TOTAL</div><div id="pieCenter" style="font-size:12px;font-weight:800">0 FC</div></div></div>
+      <div id="pieLegend" class="pie-legend"></div>
+    </div>
+    <div style="font-size:11px;color:#64748b;margin-top:10px">Chaque part = un de tes vendeurs.</div>
+  </div>
+  <div class="card">
+    <h3 style="font-size:13px">Mes Vendeurs - <span id="labelPeriode2">Jour</span></h3>
+    <div id="classVendeurs" style="margin-top:8px"></div>
+  </div>
+</div>
+
+<div class="grid2" style="margin-top:14px">
+  <div class="card">
+    <h3 style="font-size:13px">Top Produits - Mon site uniquement</h3>
+    <div id="topProd" style="margin-top:8px"></div>
+  </div>
+  <div class="card">
+    <h3 style="font-size:13px;color:#f87171">Stock Faible et Rupture - Mon site</h3>
+    <input class="search" id="searchStock" placeholder="Chercher produit..." oninput="initDashboard()" style="margin-top:10px">
+    <div id="stockList" style="margin-top:4px;max-height:300px;overflow:auto"></div>
+  </div>
+</div>
+
+<div class="grid2" style="margin-top:14px">
+  <div class="card">
+    <h3 style="font-size:13px">Caisse du Jour - Mes vendeurs</h3>
+    <div id="caisseList" style="margin-top:8px"></div>
+  </div>
+  <div class="card">
+    <h3 style="font-size:13px;color:#facc15">Ventes en attente - A valider</h3>
+    <div id="attenteList" style="margin-top:8px"></div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:14px">
+  <h3 style="font-size:13px">Dernieres Ventes - Mon site</h3>
+  <div id="lastVentes" style="margin-top:4px"></div>
+</div>
+
+<div style="display:flex;gap:10px;margin-top:14px">
+  <button class="btn btn-green" onclick="window.location.href='vente.html'">ALLER A LA VENTE</button>
+  <button class="btn btn-white" onclick="window.location.href='dashboard.html'">VOIR COMME VENDEUR</button>
+</div>
+
+<script>
+var PERIODE = 'jour';
+function setPeriode(p){ PERIODE = p; document.getElementById('fJour').className = ''; document.getElementById('f7j').className = ''; document.getElementById('fMois').className = ''; if(p==='jour'){document.getElementById('fJour').className='on';} if(p==='7j'){document.getElementById('f7j').className='on';} if(p==='mois'){document.getElementById('fMois').className='on';} initDashboard(); }
+function fmtFC(n){ var v = Number(n); if(isNaN(v) || !isFinite(v)){ v = 0; } return v.toLocaleString('fr-FR',{minimumFractionDigits:2}) + ' FC'; }
+function fmtK(n){ if(n>=1000){ return Math.round(n/1000) + 'k'; } return Math.round(n).toString(); }
+function toNum(x){ if(x==null || x===''){ return 0; } if(typeof x==='number'){ return isNaN(x)?0:x; } var s = String(x).replace(/FC/gi,'').replace(/\s/g,'').replace(',','.'); var n = Number(s); return isNaN(n)?0:n; }
+function getMe(){
+  try{
+    var u = JSON.parse(localStorage.getItem('user') || '{}');
+    var uid = localStorage.getItem('dub_current_user_id') || u.id || '';
+    var users = JSON.parse(localStorage.getItem('dub_users') || '[]');
+    var me = u;
+    for(var i=0;i<users.length;i++){ if(String(users[i].id)===String(uid)){ me = users[i]; break; } }
+    var site = me.siteId || me.siteName || me.site || u.siteId || u.siteName || u.site || 'victoire';
+    site = String(site).toLowerCase().trim();
+    return { id: String(uid || me.id || ''), site: site, nom: me.nom || me.name || me.username || 'GERANT' };
+  }catch(e){ return {id:'',site:'victoire',nom:'GERANT'}; }
+}
+function getVentes(){ try{ return JSON.parse(localStorage.getItem('dub_ventes') || '[]'); }catch(e){ return []; } }
+
+// ✅ AJOUT - MEME TAUX QUE VENDEUR + PANIER
+function getTauxSite(site){
+  var s = String(site||'victoire').toLowerCase();
+  var t = Number(localStorage.getItem('dub_taux_comptoir_'+s)||'0');
+  if(!t){
+    for(var k of Object.keys(localStorage)){
+      if(k.indexOf('dub_taux_comptoir_')===0){ t = Number(localStorage.getItem(k)||'0'); if(t>0) break; }
+    }
+  }
+  if(!t){
+    var m = {}; try{ m = JSON.parse(localStorage.getItem('dub_taux_map')||'{}'); }catch(e){}
+    if(m[s]) t = Number(m[s]);
+    if(!t) for(var kk in m){ t = Number(m[kk]); if(t>0) break; }
+  }
+  if(!t) t = Number(localStorage.getItem('dub_taux')||localStorage.getItem('BENZENE_TAUX')||'0');
+  if(!t){
+    var ventes = getVentes();
+    for(var i=ventes.length-1;i>=0;i--){ var v = Number(ventes[i].tauxComptoir||ventes[i].taux||0); if(v>0){ t=v; break; } }
+  }
+  return t;
+}
+function afficherTauxGerant(){
+  var ME = getMe();
+  var t = getTauxSite(ME.site);
+  var h = document.getElementById('tauxHGerant');
+  var a = document.getElementById('tauxActuelGerant');
+  var inp = document.getElementById('inputTauxGerant');
+  var pill = document.getElementById('pillTauxGerant');
+  if(h) h.innerText = t>0 ? ('1 $ = '+t.toLocaleString('fr-FR')+' FC') : 'Non fixé';
+  if(a) a.innerText = t>0 ? ('Taux actuel : 1 $ = '+t.toLocaleString('fr-FR')+' FC') : 'Aucun taux fixé pour ce site';
+  if(inp && t>0 && document.activeElement!==inp) inp.value = t;
+  if(pill && !t){ pill.style.background = '#dc3545'; pill.style.color = '#fff'; }
+  if(pill && t){ pill.style.background = '#f59e0b'; pill.style.color = '#000'; }
+  return t;
+}
+function changerTauxGerant(){
+  var ME = getMe();
+  var t = Number(document.getElementById('inputTauxGerant').value||'0');
+  if(!t || t < 100){ alert('Mets un taux valide, ex: 2800'); return; }
+  // ✅ On enregistre avec LA MEME CLE que Vendeur + Panier
+  localStorage.setItem('dub_taux_comptoir_'+ME.site, String(t));
+  localStorage.setItem('dub_taux', String(t));
+  localStorage.setItem('dub_panier_taux', String(t));
+  var m = {}; try{ m = JSON.parse(localStorage.getItem('dub_taux_map')||'{}'); }catch(e){}
+  m[ME.site] = t;
+  localStorage.setItem('dub_taux_map', JSON.stringify(m));
+  afficherTauxGerant();
+  alert('✅ Taux changé : 1 $ = '+t+' FC pour '+ME.site.toUpperCase()+'\nTes vendeurs le verront dans leur Dashboard + Panier.');
+}
+
+function estValidee(v){
+  var s = String(v.statut || v.status || v.etat || v.validation || '').toLowerCase().trim();
+  if(!s){ return true; }
+  if(s==='valide' || s==='validé' || s==='validee' || s==='validated' || s==='confirmé' || s==='confirme' || s==='confirmed' || s==='payé' || s==='paye' || s==='paid' || s==='terminé' || s==='termine' || s==='done' || s==='livré' || s==='livre' || s==='accepté' || s==='accepte'){ return true; }
+  if(s==='brouillon' || s==='draft' || s==='en attente' || s==='attente' || s==='pending' || s==='en cours' || s==='annulé' || s==='annule' || s==='cancelled' || s==='canceled' || s==='refusé' || s==='refuse' || s==='rejected' || s==='supprimé' || s==='supprime' || s==='deleted'){ return false; }
+  if(v.valide===true || v.validated===true){ return true; }
+  if(v.valide===false || v.validated===false){ return false; }
+  return true;
+}
+function estEnAttente(v){ var s = String(v.statut || v.status || v.etat || '').toLowerCase(); return s==='brouillon' || s==='draft' || s==='en attente' || s==='attente' || s==='pending' || s==='en cours'; }
+function getMontantVente(v){ if(v.valeurPV!=null){ return toNum(v.valeurPV); } if(v.total!=null){ return toNum(v.total); } if(v.montant!=null){ return toNum(v.montant); } if(v.valeur!=null){ return toNum(v.valeur); } if(v.pv!=null && v.qte!=null){ return toNum(v.pv)*toNum(v.qte); } return 0; }
+function getQteVente(v){ var q = v.qte!=null?v.qte:(v.qty!=null?v.qty:(v.quantite!=null?v.quantite:1)); var n = toNum(q); return isNaN(n)?1:n; }
+function getDateVente(v){ var d = v.date || v.createdAt || v.heure || ''; if(typeof d==='number'){ d = new Date(d).toISOString(); } return String(d); }
+function getSiteVente(v){ var s = v.siteId || v.site_id || v.site || v.siteName || v.siteNom || ''; return String(s || '').toLowerCase().trim(); }
+function getVendeurVente(v){ return String(v.vendeurNom || v.vendeurName || v.vendeur || v.vendeurId || v.userId || v.nomVendeur || 'Inconnu'); }
+function copierRapport(){
+  var site = document.getElementById('siteName').innerText;
+  var ca = document.getElementById('caTotal').innerText;
+  var nb = document.getElementById('nbVentes').innerText;
+  var txt = 'DUBENZENE - RAPPORT GERANT ' + site + ' - CA: ' + ca + ' - Ventes: ' + nb;
+  navigator.clipboard.writeText(txt).then(function(){ alert('Rapport copie !'); });
+}
+function exportCSV(){
+  var ME = getMe();
+  var csv = 'Date;Site;Vendeur;Client;Produit;Qte;Montant (PV)\n';
+  var list = getVentes();
+  for(var i=0;i<list.length;i++){ var v=list[i]; if(!estValidee(v)){ continue; } if(getSiteVente(v)!==ME.site){ continue; } csv += getDateVente(v) + ';' + getSiteVente(v) + ';' + getVendeurVente(v) + ';' + (v.client||'') + ';' + (v.produit||v.nom||'') + ';' + getQteVente(v) + ';' + getMontantVente(v) + '\n'; }
+  var blob = new Blob([csv],{type:'text/csv'}); var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'rapport-gerant-' + ME.site + '.csv'; a.click();
+}
+var PIE_COLORS = ['#22c55e','#facc15','#3b82f6','#f97316','#ec4899','#8b5cf6','#06b6d4','#f43f5e'];
+function dessinerCamembert(data,total){
+  var svg = document.getElementById('pieSvg');
+  document.getElementById('pieCenter').innerText = fmtFC(total);
+  if(!data.length || total===0){ svg.innerHTML = '<circle cx="60" cy="60" r="48" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="18" />'; document.getElementById('pieLegend').innerHTML = '<div style="color:#64748b;font-size:12px">Aucune vente</div>'; return; }
+  var R = 48; var C = 2*Math.PI*R; var offset = 0; var html = '';
+  for(var i=0;i<data.length;i++){ var d = data[i]; var pct = d.total/total; var dash = pct*C; var col = PIE_COLORS[i % PIE_COLORS.length]; html += '<circle cx="60" cy="60" r="' + R + '" fill="none" stroke="' + col + '" stroke-width="18" stroke-dasharray="' + Math.max(0,dash-2) + ' ' + (C-dash+2) + '" stroke-dashoffset="' + (-offset) + '" />'; offset += dash; d.color = col; d.pct = pct; }
+  svg.innerHTML = html;
+  var leg = '';
+  for(var j=0;j<data.length;j++){ var dd = data[j]; leg += '<div class="pie-item"><span class="pie-color" style="background:' + dd.color + '"></span><span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + dd.nom + '</span><b>' + Math.round(dd.pct*100) + '%</b><span style="color:#94a3b8;font-size:11px">' + fmtFC(dd.total) + '</span></div>'; }
+  document.getElementById('pieLegend').innerHTML = leg;
+}
+function grouper(list){
+  var map = {};
+  for(var i=0;i<list.length;i++){
+    var v = list[i];
+    var tid = v.transactionId || v.idVente || v.venteId || v.id || v.commandeId || null;
+    var key = tid ? 'TX_' + tid : 'LIGNE_' + i + '_' + Math.random().toString(36).slice(2,8);
+    if(!tid){
+      map[key] = {date:getDateVente(v),client:v.client||'Client',vendeur:getVendeurVente(v),totalFC:getMontantVente(v),totalQte:getQteVente(v),items:[v]};
+    } else {
+      if(!map[key]){ map[key] = {date:getDateVente(v),client:v.client||'Client',vendeur:getVendeurVente(v),totalFC:0,totalQte:0,items:[]}; }
+      map[key].totalFC += getMontantVente(v); map[key].totalQte += getQteVente(v); map[key].items.push(v);
+    }
+  }
+  var out = [];
+  for(var k in map){ out.push(map[k]); }
+  out.sort(function(a,b){ return new Date(b.date) - new Date(a.date); });
+  return out;
+}
+function initDashboard(){
+  var ME = getMe();
+  document.getElementById('siteName').innerText = ME.site.toUpperCase();
+  document.getElementById('siteName2').innerText = ME.site.toUpperCase();
+  document.getElementById('gerantName').innerText = 'GERANT - ' + ME.nom + ' - SITE ' + ME.site.toUpperCase() + ' UNIQUEMENT';
+  afficherTauxGerant();
+  var all = getVentes();
+  var monSiteVentes = [];
+  for(var i=0;i<all.length;i++){ var s = getSiteVente(all[i]); if(!s){ monSiteVentes.push(all[i]); continue; } if(s===ME.site){ monSiteVentes.push(all[i]); } }
+  var validees = [];
+  var enAttente = [];
+  for(var a=0;a<monSiteVentes.length;a++){ if(estValidee(monSiteVentes[a])){ validees.push(monSiteVentes[a]); } if(estEnAttente(monSiteVentes[a])){ enAttente.push(monSiteVentes[a]); } }
+  document.getElementById('debugGerant').innerText = ME.nom;
+  document.getElementById('debugSite').innerText = ME.site;
+  document.getElementById('debugNb').innerText = monSiteVentes.length + ' / ' + all.length;
+  var vendeursSet = [];
+  for(var v1=0;v1<validees.length;v1++){ var vn = getVendeurVente(validees[v1]); if(vendeursSet.indexOf(vn)===-1){ vendeursSet.push(vn); } }
+  var selVend = document.getElementById('filtreVendeur');
+  var curVend = selVend.value || 'tous';
+  var optHtml = '<option value="tous">Tous mes vendeurs</option>';
+  for(var o=0;o<vendeursSet.length;o++){ var sel = (curVend===vendeursSet[o]) ? ' selected' : ''; optHtml += '<option value="' + vendeursSet[o] + '"' + sel + '>' + vendeursSet[o] + '</option>'; }
+  selVend.innerHTML = optHtml;
+  var filtreVend = document.getElementById('filtreVendeur').value;
+  var filtered = [];
+  for(var f=0;f<validees.length;f++){ if(filtreVend!=='tous' && getVendeurVente(validees[f])!==filtreVend){ continue; } filtered.push(validees[f]); }
+  var filteredAttente = [];
+  for(var f2=0;f2<enAttente.length;f2++){ if(filtreVend!=='tous' && getVendeurVente(enAttente[f2])!==filtreVend){ continue; } filteredAttente.push(enAttente[f2]); }
+  var grouped = grouper(filtered);
+  var groupedAttente = grouper(filteredAttente);
+  var today = new Date().toISOString().slice(0,10);
+  var todayLocal = new Date(new Date().getTime()+60*60*1000).toISOString().slice(0,10);
+  var jour = [];
+  for(var d1=0;d1<grouped.length;d1++){ var gd = (grouped[d1].date||'').slice(0,10); if(gd===today || gd===todayLocal){ jour.push(grouped[d1]); } }
+  var periodeList = jour; var label = 'JOUR';
+  if(PERIODE==='7j'){ var d7 = new Date(); d7.setDate(d7.getDate()-7); periodeList = []; for(var d2=0;d2<grouped.length;d2++){ if(new Date(grouped[d2].date) >= d7){ periodeList.push(grouped[d2]); } } label = '7 JOURS'; }
+  if(PERIODE==='mois'){ var m = new Date().toISOString().slice(0,7); periodeList = []; for(var d3=0;d3<grouped.length;d3++){ if((grouped[d3].date||'').slice(0,7)===m){ periodeList.push(grouped[d3]); } } label = 'MOIS'; }
+  document.getElementById('labelPeriode').innerText = label;
+  document.getElementById('labelPeriode2').innerText = label;
+  var caTotal = 0;
+  for(var t=0;t<periodeList.length;t++){ caTotal += periodeList[t].totalFC; }
+  var nbVentes = periodeList.length;
+  var nbArt = 0;
+  for(var t2=0;t2<periodeList.length;t2++){ nbArt += periodeList[t2].totalQte; }
+  document.getElementById('caTotal').innerText = fmtFC(caTotal);
+  document.getElementById('nbVentes').innerText = nbVentes;
+  document.getElementById('nbArticles').innerText = nbArt + ' articles';
+  document.getElementById('panierMoyTxt').innerText = 'Panier moyen: ' + (nbVentes ? fmtFC(caTotal/nbVentes) : '0 FC');
+  var hier = new Date(); hier.setDate(hier.getDate()-1); var hierStr = hier.toISOString().slice(0,10);
+  var caHier = 0;
+  for(var h1=0;h1<grouped.length;h1++){ if((grouped[h1].date||'').slice(0,10)===hierStr){ caHier += grouped[h1].totalFC; } }
+  document.getElementById('caHierTxt').innerText = 'Hier: ' + fmtFC(caHier);
+  var caJour = 0;
+  for(var cj=0;cj<jour.length;cj++){ caJour += jour[cj].totalFC; }
+  var evol = caHier>0 ? Math.round(((caJour-caHier)/caHier)*100) : (caJour>0 ? 100 : 0);
+  document.getElementById('caEvol').innerText = (caJour>=caHier ? 'Hausse ' : 'Baisse ') + Math.abs(evol) + '% vs hier';
+  var total7 = 0; var max7 = 1; var vals = [];
+  for(var i7=6;i7>=0;i7--){ var dd = new Date(); dd.setDate(dd.getDate()-i7); var ds = dd.toISOString().slice(0,10); var ca = 0; for(var g7=0;g7<grouped.length;g7++){ if((grouped[g7].date||'').slice(0,10)===ds){ ca += grouped[g7].totalFC; } } vals.push({date:dd,ca:ca}); total7 += ca; if(ca>max7){ max7 = ca; } }
+  var barsHtml = '';
+  for(var b=0;b<vals.length;b++){ var vv = vals[b]; var hgt = Math.max(6, Math.round((vv.ca/max7)*170)); var lbl = vv.date.toLocaleDateString('fr-FR',{weekday:'short'}).slice(0,3); lbl = lbl.charAt(0).toUpperCase() + lbl.slice(1); var isToday = (b===vals.length-1); var cls = isToday ? 'bar-box today' : 'bar-box'; barsHtml += '<div class="bar-col"><div class="bar-val">' + fmtK(vv.ca) + '</div><div class="' + cls + '" style="height:' + hgt + 'px"></div><div class="bar-day">' + lbl + '</div></div>'; }
+  document.getElementById('barsPhoto').innerHTML = barsHtml;
+  document.getElementById('total7j').innerText = fmtFC(total7) + ' total';
+  document.getElementById('moy7j').innerText = fmtFC(total7/7);
+  document.getElementById('best7j').innerText = fmtFC(max7);
+  document.getElementById('ventesAujTxt').innerText = jour.length + ' ventes auj.';
+  var byVend = {};
+  for(var bv=0;bv<periodeList.length;bv++){ var g = periodeList[bv]; var keyV = g.vendeur || 'Inconnu'; if(!byVend[keyV]){ byVend[keyV] = {nom:keyV,total:0,nb:0}; } byVend[keyV].total += g.totalFC; byVend[keyV].nb += 1; }
+  var vendArr = [];
+  for(var kv in byVend){ vendArr.push(byVend[kv]); }
+  vendArr.sort(function(a,b){ return b.total - a.total; });
+  dessinerCamembert(vendArr, caTotal);
+  var classHtml = '';
+  if(!vendArr.length){ classHtml = '<div style="color:#64748b">Aucune vente</div>'; }
+  for(var ci=0;ci<vendArr.length;ci++){ var vv2 = vendArr[ci]; var pctV = caTotal>0 ? Math.round(vv2.total/caTotal*100) : 0; var bg = ci===0 ? '#facc15' : 'rgba(255,255,255,.1)'; var colT = ci===0 ? '#000' : '#fff'; classHtml += '<div class="row"><span style="display:flex;gap:10px;align-items:center"><span style="width:28px;height:28px;border-radius:50%;background:' + bg + ';color:' + colT + ';font-weight:800;display:flex;align-items:center;justify-content:center;font-size:12px">' + (ci+1) + '</span><span><b>' + vv2.nom + '</b><br><small style="color:#94a3b8">' + vv2.nb + ' ventes</small></span></span><span style="text-align:right"><b style="color:#22c55e">' + fmtFC(vv2.total) + '</b><br><small style="color:#94a3b8">' + pctV + '% du site</small></span></div><div class="progress"><div style="width:' + pctV + '%;background:' + (ci===0 ? '#22c55e' : '#3b82f6') + '"></div></div>'; }
+  document.getElementById('classVendeurs').innerHTML = classHtml;
+  var prodMap = {};
+  for(var pm=0;pm<periodeList.length;pm++){ var items = periodeList[pm].items; for(var pi=0;pi<items.length;pi++){ var it = items[pi]; var kk = String(it.produit||it.nom||'PRODUIT').toUpperCase(); if(!prodMap[kk]){ prodMap[kk] = {nom:it.produit||it.nom||'Produit',qte:0,total:0}; } prodMap[kk].qte += getQteVente(it); prodMap[kk].total += getMontantVente(it); } }
+  var topArr = [];
+  for(var tk in prodMap){ topArr.push(prodMap[tk]); }
+  topArr.sort(function(a,b){ return b.total - a.total; });
+  topArr = topArr.slice(0,6);
+  var topHtml = '';
+  if(!topArr.length){ topHtml = '<div style="color:#64748b">Aucune vente</div>'; }
+  for(var ti=0;ti<topArr.length;ti++){ topHtml += '<div class="row"><span style="display:flex;gap:8px;align-items:center"><span style="width:24px;height:24px;border-radius:6px;background:#22c55e;color:#000;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:11px">' + (ti+1) + '</span>' + topArr[ti].nom + '</span><b>' + topArr[ti].qte + ' x - ' + fmtFC(topArr[ti].total) + '</b></div>'; }
+  document.getElementById('topProd').innerHTML = topHtml;
+  var sp = {};
+  try{ sp = JSON.parse(localStorage.getItem('dub_sites_produits') || '{}'); }catch(e){ sp = {}; }
+  var listStock = sp[ME.site] || [];
+  if(!listStock.length){ for(var ks in sp){ if(ks.toLowerCase()===ME.site){ listStock = sp[ks]; break; } } }
+  var groupedStock = {};
+  for(var gs=0;gs<listStock.length;gs++){ var pp = listStock[gs]; var kn = String(pp.nom||'').toLowerCase(); if(!kn){ continue; } if(!groupedStock[kn]){ groupedStock[kn] = {nom:pp.nom,stock:0,pv:toNum(pp.pv!=null?pp.pv:pp.prix)}; } groupedStock[kn].stock += toNum(pp.stock!=null?pp.stock:(pp.stock_site!=null?pp.stock_site:(pp.quantite!=null?pp.quantite:(pp.qte!=null?pp.qte:0)))); groupedStock[kn].valeur = groupedStock[kn].stock * groupedStock[kn].pv; }
+  var stockList = [];
+  for(var skl in groupedStock){ stockList.push(groupedStock[skl]); }
+  var rupture = []; var faible = [];
+  for(var sl=0;sl<stockList.length;sl++){ if(stockList[sl].stock<=0){ rupture.push(stockList[sl]); } if(stockList[sl].stock>0 && stockList[sl].stock<=5){ faible.push(stockList[sl]); } }
+  var valeurStock = 0;
+  for(var vs=0;vs<stockList.length;vs++){ valeurStock += (stockList[vs].valeur||0); }
+  document.getElementById('stockAlert').innerText = rupture.length + faible.length;
+  document.getElementById('stockTxt').innerText = rupture.length + ' en rupture - ' + faible.length + ' faible';
+  document.getElementById('stockValeur').innerText = 'Valeur stock: ' + fmtFC(valeurStock);
+  var searchStock = (document.getElementById('searchStock').value || '').toLowerCase();
+  var alertList = [];
+  for(var al=0;al<rupture.length;al++){ var r = rupture[al]; r.etat = 'RUPTURE'; alertList.push(r); }
+  for(var al2=0;al2<faible.length;al2++){ var fbl = faible[al2]; fbl.etat = 'FAIBLE'; alertList.push(fbl); }
+  var alertHtml = '';
+  var cntA = 0;
+  for(var al3=0;al3<alertList.length;al3++){ if(cntA>=10){ break; } var sa = alertList[al3]; if(sa.nom.toLowerCase().indexOf(searchStock)===-1){ continue; } cntA++; var badgeBg = sa.etat==='RUPTURE' ? 'rgba(239,68,68,.2);color:#f87171' : 'rgba(250,204,21,.2);color:#facc15'; alertHtml += '<div class="row"><span><b>' + sa.nom + '</b></span><span style="text-align:right"><span class="badge" style="background:' + badgeBg + '">' + sa.etat + ' - Stock: ' + sa.stock + '</span><br><small style="color:#94a3b8">' + fmtFC(sa.pv) + ' / unite</small></span></div>'; }
+  if(!alertHtml){ alertHtml = '<div style="color:#22c55e;font-size:13px">Aucun stock en alerte sur mon site !</div>'; }
+  document.getElementById('stockList').innerHTML = alertHtml;
+  var rapports = [];
+  try{ rapports = JSON.parse(localStorage.getItem('dub_rapports_caisse') || '[]'); }catch(e){ rapports = []; }
+  var rapportsJour = [];
+  for(var rj=0;rj<rapports.length;rj++){ if(rapports[rj].date===today && String(rapports[rj].siteId||rapports[rj].site||'').toLowerCase()===ME.site){ rapportsJour.push(rapports[rj]); } }
+  var users = [];
+  try{ users = JSON.parse(localStorage.getItem('dub_users') || '[]'); }catch(e){ users = []; }
+  var mesVendeurs = [];
+  for(var mv=0;mv<users.length;mv++){ if(String(users[mv].siteId||users[mv].siteName||'').toLowerCase()===ME.site){ mesVendeurs.push(users[mv]); } }
+  if(!mesVendeurs.length){ for(var mv2=0;mv2<vendArr.length;mv2++){ mesVendeurs.push({nom:vendArr[mv2].nom,siteId:ME.site}); } }
+  var totalEcart = 0;
+  for(var te=0;te<rapportsJour.length;te++){ totalEcart += toNum(rapportsJour[te].ecart!=null?rapportsJour[te].ecart:rapportsJour[te].difference); }
+  document.getElementById('caisseTxt').innerText = rapportsJour.length + ' / ' + (mesVendeurs.length || vendArr.length);
+  document.getElementById('caisseDetail').innerText = 'mes vendeurs ont envoye';
+  document.getElementById('ecartTxt').innerText = 'Ecart total: ' + fmtFC(totalEcart);
+  var caisseHtml = '';
+  for(var ch=0;ch<mesVendeurs.length && ch<10;ch++){ var u = mesVendeurs[ch]; var rap = null; for(var fr=0;fr<rapportsJour.length;fr++){ if(String(rapportsJour[fr].vendeurId)===String(u.id) || rapportsJour[fr].vendeurNom===u.nom || rapportsJour[fr].vendeur===u.nom){ rap = rapportsJour[fr]; break; } } var uname = u.nom || u.name || 'Vendeur'; if(rap){ caisseHtml += '<div class="row"><span><b>' + uname + '</b></span><span style="text-align:right"><span class="badge" style="background:rgba(34,197,94,.2);color:#22c55e">ENVOYE</span><br><small style="color:#94a3b8">' + fmtFC(rap.argentMain!=null?rap.argentMain:rap.enMain) + ' en main</small></span></div>'; } else { caisseHtml += '<div class="row"><span><b>' + uname + '</b></span><span class="badge" style="background:rgba(248,113,113,.2);color:#f87171">PAS ENVOYE</span></div>'; } }
+  if(!caisseHtml){ caisseHtml = '<div style="color:#64748b">Aucun vendeur</div>'; }
+  document.getElementById('caisseList').innerHTML = caisseHtml;
+  var attenteHtml = '';
+  for(var ah=0;ah<groupedAttente.length && ah<6;ah++){ var gg = groupedAttente[ah]; attenteHtml += '<div class="row"><span><b>' + gg.client + '</b> - ' + gg.totalQte + ' art<br><small style="color:#94a3b8">' + new Date(gg.date).toLocaleString('fr-FR') + ' - ' + gg.vendeur + '</small></span><b style="color:#facc15">' + fmtFC(gg.totalFC) + '</b></div>'; }
+  if(!attenteHtml){ attenteHtml = '<div style="color:#22c55e">Aucune vente en attente</div>'; }
+  document.getElementById('attenteList').innerHTML = attenteHtml;
+  var searchV = (document.getElementById('searchVente').value || '').toLowerCase();
+  var lastHtml = '';
+  var cntL = 0;
+  for(var lh=0;lh<grouped.length;lh++){ if(cntL>=8){ break; } var gl = grouped[lh]; if((gl.client||'').toLowerCase().indexOf(searchV)===-1 && (gl.vendeur||'').toLowerCase().indexOf(searchV)===-1){ continue; } cntL++; lastHtml += '<div class="row"><span><b>' + gl.client + '</b> - ' + gl.totalQte + ' art<br><small style="color:#94a3b8">' + new Date(gl.date).toLocaleString('fr-FR') + ' - Vendeur: ' + gl.vendeur + '</small></span><b style="color:#22c55e">' + fmtFC(gl.totalFC) + '</b></div>'; }
+  if(!lastHtml){ lastHtml = '<div style="color:#64748b">Aucune vente</div>'; }
+  document.getElementById('lastVentes').innerHTML = lastHtml;
+}
+initDashboard();
+setInterval(initDashboard,5000);
+setInterval(function(){ var h = document.getElementById('heure'); if(h){ h.innerText = new Date().toLocaleTimeString(); } },1000);
+</script>
+</body>
+</html>

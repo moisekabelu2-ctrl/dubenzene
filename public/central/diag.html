@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>DIAG BOSS</title>
+<style>body{background:#000;color:#facc15;font-family:monospace;padding:20px;font-size:12px} .key{background:#171a23;padding:10px;margin:8px 0;border-radius:8px;border:1px solid #333} button{background:#facc15;color:#000;padding:10px;border:none;border-radius:8px;font-weight:900;cursor:pointer;margin:5px}</style>
+</head><body>
+<h1>DIAGNOSTIC LOCALSTORAGE - BOSS</h1>
+<button onclick="location.reload()">🔄 Reload</button>
+<button onclick="localStorage.clear();alert(' vidé ');location.reload()">🗑️ Vider tout (attention)</button>
+<div id="out"></div>
+<script>
+let out = document.getElementById('out');
+let html = `<p>Total clés: ${localStorage.length}</p>`;
+for(let i=0;i<localStorage.length;i++){
+  let k = localStorage.key(i);
+  let v = localStorage.getItem(k)||'';
+  html += `<div class="key"><b>${k}</b> (${v.length} chars)<br><pre style="white-space:pre-wrap;color:#fff;max-height:150px;overflow:auto">${v.substring(0,1000)}</pre></div>`;
+}
+out.innerHTML = html;
+if(localStorage.length===0) out.innerHTML += '<h2 style="color:red">❌ LOCALSTORAGE VIDE ! C est pour ça que fournisseurs vide</h2>';
+</script>
+</body></html>

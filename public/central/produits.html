@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Produits - Global</title>
+<link rel="stylesheet" href="css/produits.css">
+</head>
+<body>
+<div class="header">
+<div><h1 class="h1">Produits - Global</h1><p style="font-size:11px;color:#6a7085">Dépôt + Tous les Sites • Même NOM + Même FOURNISSEUR = Même produit</p></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<div style="position:relative;min-width:280px;flex:1"><input id="search" class="search" placeholder="🔍 100 voltaren, 500 para..." oninput="onSearchInput()"></div>
+<button onclick="openAdd()" class="btn btn-yellow">+ Ajouter</button>
+</div>
+</div>
+<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+<button id="vGlobal" class="filter-btn active" onclick="setVue('global')">🌍 Global</button>
+<button id="vDepot" class="filter-btn" onclick="setVue('depot')">🏭 Dépôt</button>
+<button id="vSites" class="filter-btn" onclick="setVue('sites')">🏪 Sites</button>
+<select id="selSite" class="input" style="width:auto;display:none" onchange="onSiteChange()"></select>
+</div>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span id="countProduits" style="font-size:12px;color:#facc15;font-weight:800"></span><button onclick="clearSearch()" style="background:transparent;border:1px solid #222735;color:#fff;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:12px">✖ Effacer</button></div>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Produit</th><th>Où ?</th><th>PA</th><th>Fournisseur</th><th>Lot / Péremption</th><th>Stock</th><th>Voir</th><th>Modifier</th><th>Suppr</th></tr></thead>
+<tbody id="tbody"></tbody>
+</table>
+<div id="paginationProduits" class="pag"></div>
+</div>
+<div class="modal-overlay" id="addModal"><div class="modal-box">
+<div class="modal-head"><span>➕ Nouveau Produit</span><button onclick="closeAdd()" style="background:0;border:0;color:#fff;font-size:22px;cursor:pointer">×</button></div>
+<div class="modal-body" style="display:grid;gap:12px">
+<div class="field"><label class="req">Nom Produit *</label><input id="a_nom" class="input input-req" placeholder="Ex: VOLTAREN 100MG"></div>
+<div class="field"><label class="req">Fournisseur * - Clique pour choisir</label>
+<select id="a_fournisseur" class="input input-req" onchange="onFournisseurChange()"></select>
+<input id="a_fournisseur_manual" class="input input-req" placeholder="Nouveau fournisseur..." style="display:none;margin-top:8px">
+<button onclick="quickAddFournisseur()" id="btn-quick-add" class="btn btn-yellow" style="display:none;margin-top:8px;width:100%;font-size:11px">+ Enregistrer ce fournisseur</button>
+<div id="alert-four" style="font-size:11px;margin-top:6px"></div></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+<div class="field"><label class="req">Lot *</label><input id="a_lot" class="input input-req" placeholder="LOT-001"></div>
+<div class="field"><label class="req">Péremption *</label><input id="a_peremption" type="date" class="input input-req"></div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+<div class="field"><label class="req">PA *</label><input id="a_pa" type="number" class="input input-req" placeholder="6000"></div>
+<div class="field"><label>Conditionnement</label><input id="a_conditionnement" class="input" placeholder="Boîte"></div>
+</div>
+<div class="field"><label>Code Barre</label><input id="a_barcode" class="input"></div>
+<div>
+<label class="label-mini" style="color:#facc15">📍 Où ce produit doit-il être vu ? *</label>
+<div class="visi-box">
+<label class="visi-opt sel" id="opt-depot" onclick="setVisibilite('depot')"><input type="radio" name="visibilite" value="depot" checked> <span>🏭 <b>Rester au Dépôt seulement</b><br><small style="color:#6a7085">Il n'apparaît dans aucun site pour l'instant. Tu le chargeras plus tard.</small></span></label>
+<label class="visi-opt" id="opt-tous" onclick="setVisibilite('tous')"><input type="radio" name="visibilite" value="tous"> <span>🌍 <b>Tous les sites</b><br><small style="color:#6a7085">Il apparaît dans tous les sites, avec stock 0. Tu chargeras après.</small></span></label>
+<label class="visi-opt" id="opt-specifiques" onclick="setVisibilite('specifiques')"><input type="radio" name="visibilite" value="specifiques"> <span>📍 <b>Sites spécifiques</b><br><small style="color:#6a7085">Tu coches les sites où il doit être vu.</small></span></label>
+<div id="choixSites" style="display:none;margin-top:10px;display:grid;gap:6px"></div>
+</div>
+</div>
+</div>
+<div class="modal-foot"><button onclick="closeAdd()" class="btn btn-dark" style="flex:1">Annuler</button><button onclick="saveNew()" class="btn btn-yellow" style="flex:2">💾 ENREGISTRER</button></div>
+</div></div>
+<div class="modal-overlay" id="editModal"><div class="modal-box">
+<div class="modal-head"><span>✏️ Modifier - PARTOUT</span><button onclick="closeEdit()" style="background:0;border:0;color:#fff;font-size:22px;cursor:pointer">×</button></div>
+<div class="modal-body" style="display:grid;gap:12px">
+<div><label class="label-mini">Nom *</label><input id="e_nom" class="input"></div>
+<div><label class="label-mini">Fournisseur * - Clique pour choisir</label>
+<select id="e_fournisseur" class="input"></select>
+<input id="e_fournisseur_manual" class="input" placeholder="Nouveau fournisseur..." style="display:none;margin-top:8px">
+<button onclick="quickAddFournisseurEdit()" id="btn-quick-edit" class="btn btn-yellow" style="display:none;margin-top:8px;width:100%;font-size:11px">+ Enregistrer ce fournisseur</button>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+<div><label class="label-mini">Lot</label><input id="e_lot" class="input"></div>
+<div><label class="label-mini">Péremption</label><input id="e_peremption" type="date" class="input"></div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+<div><label class="label-mini">PA</label><input id="e_pa" type="number" class="input"></div>
+<div><label class="label-mini">Conditionnement</label><input id="e_conditionnement" class="input"></div>
+</div>
+<div><label class="label-mini">Code Barre</label><input id="e_barcode" class="input"></div>
+<div><label class="label-mini">Catégorie</label><input id="e_categorie" class="input"></div>
+<div>
+<label class="label-mini" style="color:#22c55e">📍 Visible dans quels sites ? (Coche pour ajouter, décoche pour retirer)</label>
+<div id="editChoixSites" style="display:grid;gap:6px"></div>
+<p style="font-size:11px;color:#f87171">⚠️ Si tu décoches un site où il y a encore du stock, je ne le retire pas. Vide le stock d'abord dans Sites.</p>
+</div>
+<p style="font-size:11px;color:#facc15">✅ Modifié au Dépôt + dans TOUS les Sites où il existe. Le stock ne change pas.</p>
+</div>
+<div class="modal-foot"><button onclick="closeEdit()" class="btn btn-dark" style="flex:1">Annuler</button><button onclick="saveEdit()" class="btn btn-green" style="flex:2">💾 Sauver partout</button></div>
+</div></div>
+
+<script src="js/common.js"></script>
+<script src="js/produits.js"></script>
+</body>
+</html>

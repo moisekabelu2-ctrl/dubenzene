@@ -1,0 +1,68 @@
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0f1115;color:#fff;font-family:Inter,system-ui,sans-serif;padding:24px}
+.header{display:flex;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px}
+.h1{font-size:20px;font-weight:900}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border-radius:12px;border:1px solid #222735;font-weight:700;font-size:13px;cursor:pointer}
+.btn-dark{background:#171a23;color:#fff}.btn-yellow{background:#facc15;color:#000;border-color:#facc15}
+.btn-danger{background:#dc3545;color:#fff;border-color:#dc3545}
+.btn-orange{background:#ff7a00;color:#fff;border-color:#ff7a00}
+.btn-purple{background:#a855f7;color:#fff;border-color:#a855f7}
+.btn-blue{background:#3b82f6;color:#fff;border-color:#3b82f6}
+.btn-vue{background:#171a23;color:#fff;border-color:#facc15}
+.btn-green{background:#22c55e;color:#fff;border-color:#22c55e}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px}
+@media(max-width:900px){.grid4,.grid3{grid-template-columns:repeat(2,1fr)}}@media(max-width:500px){.grid4,.grid3{grid-template-columns:1fr}}
+.card{background:#171a23;border:1px solid #222735;border-radius:16px;padding:16px}
+.card-label{font-size:10px;color:#5a6080;text-transform:uppercase;font-weight:700}
+.card-value{font-size:22px;font-weight:900;margin-top:6px}
+.card-sub{font-size:11px;color:#6a7085;margin-top:4px}
+.select{padding:10px 14px;border-radius:12px;background:#171a23;border:1px solid #222735;color:#fff;font-size:13px;min-width:200px}
+.table-wrap{background:#171a23;border:1px solid #222735;border-radius:16px;overflow:hidden;margin-bottom:16px}
+.table-scroll{overflow-x:auto}
+table{width:100%;font-size:12px;border-collapse:collapse;white-space:nowrap}
+thead{background:#0f1115;border-bottom:1px solid #222735;text-transform:uppercase;color:#5a6080;font-size:10px}
+th{padding:14px;text-align:left}
+td{padding:14px;border-top:1px solid #1f2438;vertical-align:top}
+tr:hover{background:#1c2135}
+.prod-name{font-weight:700;min-width:200px;max-width:280px;white-space:normal;word-break:break-word}
+.badge{display:inline-block;padding:3px 8px;border-radius:999px;font-size:10px;font-weight:700}
+.badge-green{background:rgba(34,197,94,0.15);color:#22c55e}.badge-red{background:rgba(239,68,68,0.15);color:#f87171}
+.badge-mb{background:rgba(250,204,21,0.15);color:#facc15;border:1px solid rgba(250,204,21,0.2);font-weight:900;font-size:11px}
+.btn-mini{padding:6px 10px;border-radius:8px;font-size:11px;font-weight:800;border:1px solid transparent;cursor:pointer}
+.btn-mini-yellow{background:#facc15;color:#000}.btn-mini-red{background:rgba(239,68,68,0.1);color:#f87171;border-color:rgba(239,68,68,0.2)}
+.btn-mini-orange{background:rgba(255,122,0,.15);color:#ff7a00;border-color:rgba(255,122,0,.3)}
+.btn-mini-purple{background:rgba(168,85,247,.15);color:#c084fc;border-color:rgba(168,85,247,.3)}
+.search{padding:12px 14px;border-radius:12px;background:#0f1115;border:1px solid #222735;color:#fff;font-size:14px;width:100%}
+.search:focus{outline:none;border-color:#facc15}
+.search-big{padding:14px 16px;border-radius:14px;background:#0f1115;border:2px solid #facc15;color:#fff;font-size:15px;width:100%;font-weight:600}
+.search-big:focus{outline:none;border-color:#facc15;box-shadow:0 0 0 3px rgba(250,204,21,.15)}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:999;align-items:center;justify-content:center;padding:15px}
+.modal-overlay.show{display:flex}
+.modal-box{background:#171a23;border:1px solid #222735;border-radius:16px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto}
+.modal-head{padding:14px 16px;font-weight:800;display:flex;justify-content:space-between;align-items:center}
+.modal-head.danger{background:#dc3545;color:#fff}
+.modal-head.orange{background:#ff7a00;color:#fff}
+.modal-head.purple{background:#a855f7;color:#fff}
+.modal-head.blue{background:#3b82f6;color:#fff}
+.modal-head.green{background:#22c55e;color:#fff}
+.modal-body{padding:16px;font-size:13px;color:#ccc}
+.modal-foot{padding:12px 16px;display:flex;justify-content:flex-end;gap:8px;border-top:1px solid #222735}
+.input-code{width:100%;padding:10px;border:2px solid #dc3545;border-radius:10px;margin-top:10px;background:#0f1115;color:#fff}
+.input-code.orange{border-color:#ff7a00}.input-code.purple{border-color:#a855f7}.input-code.blue{border-color:#3b82f6}.input-code.green{border-color:#22c55e}
+.form-control{padding:10px;border:1px solid #222735;border-radius:10px;background:#0f1115;color:#fff;font-size:13px;width:100%;margin-bottom:8px}
+.label-mini{font-size:10px;color:#5a6080;text-transform:uppercase;font-weight:700;margin:8px 0 4px 2px;display:block}
+.pv-missing{color:#f87171;font-weight:800;font-size:11px;background:rgba(239,68,68,.15);padding:4px 8px;border-radius:8px}
+.excel-wrap{position:relative;display:inline-block}
+.excel-menu{display:none;position:absolute;right:0;top:110%;min-width:260px;background:#171a23;border:1px solid #222735;border-radius:14px;overflow:hidden;z-index:999;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.excel-menu.show{display:block}
+.excel-menu.left{right:auto;left:0}
+.excel-item{display:flex;align-items:center;gap:10px;width:100%;padding:12px 14px;background:transparent;border:0;color:#fff;text-align:left;font-size:13px;font-weight:600;cursor:pointer}
+.excel-item:hover{background:#1c2135}
+.excel-item.active{background:rgba(250,204,21,.15);color:#facc15}
+.excel-item.yellow{color:#facc15}.excel-item.green{color:#22c55e}.excel-item.red{color:#f87171}.excel-item.orange{color:#ff7a00}.excel-item.purple{color:#c084fc}.excel-item.blue{color:#60a5fa}
+.excel-sep{height:1px;background:#222735;margin:4px 0}
+.excel-title{padding:10px 14px;font-size:10px;color:#5a6080;text-transform:uppercase;font-weight:800;background:#0f1115}
+.article-chip{background:#171a23;border:1px solid #222735;border-radius:12px;padding:12px 14px;min-width:160px;flex:1}
+.search-bar{background:#171a23;border:1px solid #222735;border-radius:14px;padding:12px;margin-bottom:12px}
+.chip-sugg{background:#0f1115;border:1px solid #facc15;color:#facc15;padding:6px 12px;border-radius:999px;font-size:12px;font-weight:700;cursor:pointer}

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Retours - Gérant</title></head>
+<body style="margin:0;padding:12px;font-family:Arial;background:#05070a;color:white">
+<style>*{box-sizing:border-box}.card{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:14px;margin-bottom:10px}.btn{flex:1;padding:13px;border-radius:12px;font-weight:900;border:none;cursor:pointer}.btn-ok{background:#22c55e;color:#fff}.btn-no{background:rgba(239,68,68,0.2);color:#fca5a5;border:1px solid rgba(239,68,68,0.4)}.input{width:100%;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:13px;color:white;outline:none;margin-top:6px}.vendeur-row{cursor:pointer}.badge{background:#ef4444;color:white;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:900;min-width:28px;text-align:center;display:inline-block}.badge.vert{background:#22c55e}</style>
+
+<div style="display:flex;justify-content:space-between;margin-bottom:12px"><div><h1 style="font-size:19px;margin:0">DUBENZENE <span style="color:#22c55e" id="siteName">VICTOIRE</span></h1><div style="font-size:10px;color:#64748b">RETOURS À VALIDER - GÉRANT</div></div><button onclick="afficher()" style="padding:8px 14px;border-radius:10px;background:#facc15;border:none;font-weight:900;cursor:pointer">🔄 Actualiser</button></div>
+<div style="background:rgba(250,204,21,0.1);border:1px solid rgba(250,204,21,0.3);border-radius:12px;padding:11px;font-size:13px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center"><span>↩️ <b>En attente</b> • <span style="color:#94a3b8;font-size:12px">Validés aujourd'hui : <b id="badgeValideJour" style="color:#22c55e">0</b></span></span><span id="badgeGlobal" class="badge" style="font-size:14px">0</span></div>
+<div class="card" style="display:flex;justify-content:space-between;align-items:center"><div><b style="font-size:13px">🔑 Code de validation</b><br><small style="color:#94a3b8">Code : <span id="codeAffiche">****</span></small></div><button onclick="changerCode()" style="padding:10px 14px;border-radius:10px;background:#facc15;border:none;font-weight:900;cursor:pointer">Changer</button></div>
+<div id="liste"></div>
+<div id="popupCode" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:99;align-items:center;justify-content:center;padding:20px"><div style="background:#111827;border:1px solid #333;border-radius:16px;padding:18px;width:100%;max-width:340px"><h3 id="titrePopup" style="margin:0;font-size:15px">🔒 Code gérant</h3><p id="textePopup" style="font-size:12px;color:#94a3b8"></p><input id="inputCode" type="password" inputmode="numeric" class="input" placeholder="Code" maxlength="6"><div style="display:flex;gap:8px;margin-top:14px"><button class="btn" style="background:rgba(255,255,255,0.1);color:white" onclick="fermerPopup()">Annuler</button><button class="btn" style="background:#facc15;color:#000" onclick="confirmerPopup()">Confirmer</button></div><div id="erreurCode" style="display:none;color:#ef4444;font-size:12px;margin-top:10px;font-weight:700">❌ Code faux</div></div></div>
+
+<script>
+function fmtFC(n){return Number(n||0).toLocaleString('fr-FR',{minimumFractionDigits:2})+' FC'}
+function getSiteId(){try{let u=JSON.parse(localStorage.getItem('user')||'{}');if(u.siteId) return u.siteId;if(u.siteName) return u.siteName;let uid=localStorage.getItem('dub_current_user_id');let users=JSON.parse(localStorage.getItem('dub_users')||'[]');let me=users.find(x=>String(x.id)===String(uid));if(me&&me.siteId) return me.siteId;if(me&&me.siteName) return me.siteName;}catch(e){}return 'victoire';}
+let SITE_ID=getSiteId();document.getElementById('siteName').innerText=String(SITE_ID).toUpperCase();
+function keyCode(){return 'dub_code_retour_'+String(SITE_ID).toLowerCase();}
+function getCode(){let c=localStorage.getItem(keyCode());if(!c){c='1234';localStorage.setItem(keyCode(),c);}return c;}
+function setCode(n){localStorage.setItem(keyCode(),n);}
+function getDemandes(){try{return JSON.parse(localStorage.getItem('dub_retours_demandes')||'[]')}catch(e){return []}}
+function saveDemandes(l){localStorage.setItem('dub_retours_demandes',JSON.stringify(l));}
+function getNomVendeur(r){if(r.vendeurNom) return r.vendeurNom;try{let users=JSON.parse(localStorage.getItem('dub_users')||'[]');let u=users.find(x=>String(x.id)===String(r.vendeur));if(u) return u.nom||u.name||u.username||('Vendeur '+r.vendeur);}catch(e){}return 'Vendeur '+(r.vendeur||'?');}
+function estAujourdhui(iso){ if(!iso) return false; let d=new Date(iso); let n=new Date(); return d.getFullYear()===n.getFullYear() && d.getMonth()===n.getMonth() && d.getDate()===n.getDate(); }
+function jourDe(iso){ if(!iso) return ''; let d=new Date(iso); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function norm(s){ return String(s||'').toLowerCase().trim().replace(/\s+/g,' '); }
+
+// ===== ✅ CORRIGÉ : TON VRAI STOCK = dub_sites_produits[site] =====
+function remettreEnStock(produitNom, qteRetour){
+  let cherche = norm(produitNom);
+  let log = [];
+  let sp = {}; try{ sp = JSON.parse(localStorage.getItem('dub_sites_produits')||'{}'); }catch(e){ sp={}; }
+  // Trouve la bonne clé de site (victoire / VICTOIRE / etc)
+  let cleSite = null;
+  Object.keys(sp).forEach(k=>{ if(k.toLowerCase()===String(SITE_ID).toLowerCase()) cleSite=k; });
+  if(!cleSite) cleSite = SITE_ID;
+  if(!Array.isArray(sp[cleSite])) sp[cleSite]=[];
+  let list = sp[cleSite];
+  // Ton stock page fait la somme de toutes les lignes avec le même nom,
+  // donc on ajoute tout sur la PREMIÈRE ligne qui correspond, le total affiché va monter
+  let idx = list.findIndex(p=> norm(p.nom||p.produit||p.name||'')===cherche);
+  if(idx>=0){
+    let p = list[idx];
+    let avant = Number(p.stock ?? p.stock_site ?? p.quantite ?? p.qte ?? 0);
+    // On met à jour TOUS les champs possibles pour être sûr
+    if(p.stock!=null) p.stock = Number(p.stock||0)+Number(qteRetour);
+    else if(p.stock_site!=null) p.stock_site = Number(p.stock_site||0)+Number(qteRetour);
+    else if(p.quantite!=null) p.quantite = Number(p.quantite||0)+Number(qteRetour);
+    else if(p.qte!=null) p.qte = Number(p.qte||0)+Number(qteRetour);
+    else p.stock = Number(qteRetour);
+    // Synchronise les autres champs si ils existent
+    if(p.stock!=null){ if(p.stock_site!=null) p.stock_site=p.stock; if(p.quantite!=null) p.quantite=p.stock; if(p.qte!=null) p.qte=p.stock; }
+    sp[cleSite]=list;
+    localStorage.setItem('dub_sites_produits', JSON.stringify(sp));
+    log.push('✅ Stock '+p.nom+' : '+avant+' -> '+(avant+Number(qteRetour))+' dans dub_sites_produits['+cleSite+']');
+    return {trouve:true, log};
+  } else {
+    log.push('❌ Produit "'+produitNom+'" introuvable dans dub_sites_produits['+cleSite+'] - '+list.length+' produits dans ce site');
+    // On crée quand même la ligne pour ne pas perdre le retour
+    list.push({nom:produitNom, stock:Number(qteRetour), pv:0, actif:true});
+    sp[cleSite]=list;
+    localStorage.setItem('dub_sites_produits', JSON.stringify(sp));
+    log.push('➕ Ligne créée avec stock '+qteRetour);
+    return {trouve:false, log};
+  }
+}
+
+function corrigerVente(r){
+  let cherche = norm(r.produit);
+  let reste = Number(r.qte||0);
+  let log = [];
+  let clesVentes = ['dub_ventes','dub_ventes_victoire','dub_ventes_'+String(SITE_ID).toLowerCase(),'dub_historique_ventes','dub_sales'];
+  for(let i=0;i<localStorage.length;i++){ let k=localStorage.key(i); if(k.includes('vente')||k.includes('sale')){ if(!clesVentes.includes(k)) clesVentes.push(k); } }
+  for(let cle of clesVentes){
+    if(reste<=0) break;
+    let arr=null; try{ arr=JSON.parse(localStorage.getItem(cle)||'null'); }catch(e){ continue; }
+    if(!Array.isArray(arr)) continue;
+    let modifie=false;
+    for(let v of arr){
+      if(reste<=0) break;
+      if(v.produit){
+        if(norm(v.produit)!==cherche) continue;
+        let meme=false;
+        if(r.venteKey && String((v.date||'').slice(0,16)+'|'+(v.client||'Client')+'|'+(v.phone||''))===String(r.venteKey)) meme=true;
+        if(String(v.client||'')===String(r.client||'')) meme=true;
+        if(v.date && r.dateVente && String(v.date).slice(0,10)===String(r.dateVente).slice(0,10)) meme=true;
+        if(!meme) continue;
+        let qAct = Number(v.qte ?? v.quantite ?? 0);
+        if(qAct<=0) continue;
+        let aEnlever = Math.min(qAct, reste);
+        let qRest = qAct - aEnlever;
+        if(v.qte!=null) v.qte=qRest;
+        if(v.quantite!=null) v.quantite=qRest;
+        let nouv = qRest * Number(v.pv||r.pv||0);
+        if(v.valeurPV!=null) v.valeurPV=nouv;
+        if(v.total_vente!=null) v.total_vente=nouv;
+        if(v.total!=null) v.total=nouv;
+        if(v.montant!=null) v.montant=nouv;
+        reste -= aEnlever; modifie=true;
+        log.push('✅ Vente corrigée dans '+cle+' : -'+aEnlever);
+      } else if(Array.isArray(v.items)){
+        let meme = String(v.client||'')===String(r.client||'') || (v.date && r.dateVente && String(v.date).slice(0,10)===String(r.dateVente).slice(0,10));
+        if(!meme) continue;
+        for(let it of v.items){
+          if(reste<=0) break;
+          if(norm(it.produit)!==cherche) continue;
+          let qAct = Number(it.qte ?? it.quantite ?? 0);
+          if(qAct<=0) continue;
+          let aEnlever = Math.min(qAct, reste);
+          let qRest = qAct - aEnlever;
+          if(it.qte!=null) it.qte=qRest;
+          if(it.quantite!=null) it.quantite=qRest;
+          reste -= aEnlever; modifie=true;
+          log.push('✅ Vente groupée corrigée dans '+cle+' : -'+aEnlever);
+        }
+        if(modifie){ let tot=0; v.items.forEach(it=>{ tot += Number(it.qte||it.quantite||0)*Number(it.pv||0); }); if(v.total!=null) v.total=tot; if(v.total_vente!=null) v.total_vente=tot; if(v.montant!=null) v.montant=tot; }
+      }
+    }
+    if(modifie) localStorage.setItem(cle, JSON.stringify(arr));
+  }
+  if(reste>0) log.push('❌ Vente introuvable. Reste : '+reste+' - Envoie-moi le code VENTES pour corriger ça aussi.');
+  return {reste, log};
+}
+
+function deduireDuJourOriginal(dateVente, montantRetour){
+  let jourVente = jourDe(dateVente); if(!jourVente) return;
+  let clesPossibles = ['dub_journal','dub_caisse','dub_caisse_jour','dub_totaux_jour','dub_ventes_jour','dub_journal_ventes','dub_stats_jour','dub_rapport_jour'];
+  clesPossibles.forEach(cle=>{
+    let data=null; try{ data=JSON.parse(localStorage.getItem(cle)||'null'); }catch(e){}
+    if(!data) return;
+    if(typeof data==='object' && !Array.isArray(data)){
+      let mod=false; Object.keys(data).forEach(k=>{ if(k.slice(0,10)===jourVente){ let e=data[k]; if(typeof e==='number'){ data[k]=Math.max(0,e-montantRetour); mod=true; } else if(e&&typeof e==='object'){ if(e.total!=null) e.total=Math.max(0,Number(e.total)-montantRetour); if(e.total_vente!=null) e.total_vente=Math.max(0,Number(e.total_vente)-montantRetour); if(e.montant!=null) e.montant=Math.max(0,Number(e.montant)-montantRetour); if(e.ca!=null) e.ca=Math.max(0,Number(e.ca)-montantRetour); mod=true; } } }); if(mod) localStorage.setItem(cle, JSON.stringify(data));
+    }
+    if(Array.isArray(data)){
+      let mod=false; data.forEach(e=>{ let d=e.date||e.jour||''; if(String(d).slice(0,10)===jourVente){ if(e.total!=null) e.total=Math.max(0,Number(e.total)-montantRetour); if(e.montant!=null) e.montant=Math.max(0,Number(e.montant)-montantRetour); if(e.ca!=null) e.ca=Math.max(0,Number(e.ca)-montantRetour); mod=true; } }); if(mod) localStorage.setItem(cle, JSON.stringify(data));
+    }
+  });
+}
+
+let actionEnCours=null;let vendeurOuvert=null;
+function afficher(){
+  let all=getDemandes();
+  let liste=all.filter(r=>String(r.siteId||'').toLowerCase()===String(SITE_ID).toLowerCase());
+  document.getElementById('codeAffiche').innerText='**** ('+getCode().length+' chiffres)';
+  document.getElementById('badgeGlobal').innerText=liste.filter(r=>r.statut==='en_attente').length;
+  document.getElementById('badgeValideJour').innerText=liste.filter(r=>r.statut==='valide' && estAujourdhui(r.dateValidation)).length;
+  let div=document.getElementById('liste');
+  if(liste.length===0){div.innerHTML='<div class="card" style="text-align:center;color:#94a3b8">Aucune demande ✅</div>';return;}
+  let parVendeur={};
+  liste.forEach(r=>{let k=String(r.vendeur||'inconnu');if(!parVendeur[k]) parVendeur[k]={vendeur:r.vendeur,nom:getNomVendeur(r),demandes:[]};parVendeur[k].demandes.push(r);});
+  let groupes=Object.values(parVendeur).sort((a,b)=>b.demandes.filter(x=>x.statut==='en_attente').length - a.demandes.filter(x=>x.statut==='en_attente').length);
+  if(vendeurOuvert){
+    let g=groupes.find(x=>String(x.vendeur)===String(vendeurOuvert));
+    if(!g){vendeurOuvert=null;afficher();return;}
+    let att=g.demandes.filter(x=>x.statut==='en_attente');
+    let hist=g.demandes.filter(x=>x.statut!=='en_attente');
+    let valAuj=g.demandes.filter(x=>x.statut==='valide' && estAujourdhui(x.dateValidation)).length;
+    let html=`<button onclick="vendeurOuvert=null;afficher()" style="padding:10px 14px;border-radius:10px;background:#333;color:white;border:none;font-weight:900;margin-bottom:10px;cursor:pointer">← Retour vendeurs</button>`;
+    html+=`<div class="card"><b style="font-size:15px">👤 ${g.nom}</b><div style="font-size:12px;color:#94a3b8;margin-top:4px">${att.length} en attente • ${valAuj} validés aujourd'hui • ${hist.length} historique</div></div>`;
+    html+=`<div style="font-size:12px;font-weight:900;margin:10px 0 6px;color:#facc15">⏳ EN ATTENTE (${att.length})</div>`;
+    if(att.length===0) html+=`<div class="card" style="color:#94a3b8;font-size:12px">Aucun en attente ✅</div>`;
+    att.forEach(r=>{let idx=all.findIndex(x=>x.id===r.id);html+=`<div class="card"><div style="display:flex;justify-content:space-between;gap:8px"><b>${r.qte} x ${r.produit}</b><span style="color:#facc15;font-weight:900">⏳ EN ATTENTE</span></div><div style="font-size:12px;color:#94a3b8;margin-top:6px">Client : ${r.client||'-'} • Vente du <b style="color:#fff">${r.dateVente?new Date(r.dateVente).toLocaleDateString('fr-FR'):'-'}</b><br>Demande : ${r.dateDemande?new Date(r.dateDemande).toLocaleString('fr-FR'):'-'} • ${r.motif||'-'}<br>Montant : <b style="color:#facc15">${fmtFC(r.montant)}</b><br><i style="color:#e2e8f0">${r.raison||'-'}</i></div><div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-ok" onclick="demanderCode('valider', ${idx})">✅ VALIDER</button><button class="btn btn-no" onclick="demanderCode('refuser', ${idx})">❌ REFUSER</button></div></div>`;});
+    html+=`<div style="font-size:12px;font-weight:900;margin:16px 0 6px;color:#22c55e">📜 HISTORIQUE (${hist.length}) - reste pour toujours</div>`;
+    if(hist.length===0) html+=`<div class="card" style="color:#94a3b8;font-size:12px">Aucun historique</div>`;
+    hist.slice().sort((a,b)=>new Date(b.dateValidation||b.dateDemande)-new Date(a.dateValidation||a.dateDemande)).forEach(r=>{let badge=r.statut==='valide'?'<span style="color:#22c55e;font-weight:900">✅ VALIDÉ</span>':'<span style="color:#ef4444;font-weight:900">❌ REFUSÉ</span>';html+=`<div class="card" style="opacity:0.9"><div style="display:flex;justify-content:space-between;gap:8px"><b>${r.qte} x ${r.produit}</b>${badge}</div><div style="font-size:12px;color:#94a3b8;margin-top:6px">Client : ${r.client||'-'} • Vente du ${r.dateVente?new Date(r.dateVente).toLocaleDateString('fr-FR'):'-'} • Traitée le ${r.dateValidation?new Date(r.dateValidation).toLocaleString('fr-FR'):'-'}<br>Montant : <b style="color:#facc15">${fmtFC(r.montant)}</b></div></div>`;});
+    div.innerHTML=html;return;
+  }
+  div.innerHTML='<div style="font-size:12px;color:#94a3b8;margin-bottom:8px">👆 Clique sur un vendeur</div>'+groupes.map(g=>{
+    let att=g.demandes.filter(x=>x.statut==='en_attente').length;
+    let hist=g.demandes.filter(x=>x.statut!=='en_attente').length;
+    let valAuj=g.demandes.filter(x=>x.statut==='valide' && estAujourdhui(x.dateValidation)).length;
+    let badge=att>0?`<span class="badge">${att}</span>`:`<span class="badge vert">0</span>`;
+    return `<div class="card vendeur-row" onclick="vendeurOuvert='${String(g.vendeur).replace(/'/g,"")}';afficher()"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div><b style="font-size:15px">👤 ${g.nom}</b><div style="font-size:12px;color:#94a3b8;margin-top:4px">${att} en attente • ${valAuj} validés aujourd'hui • ${hist} historique</div></div><div style="text-align:right">${badge}</div></div><div style="margin-top:10px;font-size:12px;color:#facc15;font-weight:800">👁️ Voir les retours →</div></div>`;
+  }).join('');
+}
+function demanderCode(type, idx){actionEnCours={type:type,index:idx};let all=getDemandes();let r=all[idx];document.getElementById('titrePopup').innerText=type==='valider'?'🔒 Code pour VALIDER':'🔒 Code pour REFUSER';document.getElementById('textePopup').innerText=r?(r.qte+' x '+r.produit+' - '+fmtFC(r.montant)+' - Vente du '+new Date(r.dateVente).toLocaleDateString('fr-FR')):'';document.getElementById('inputCode').value='';document.getElementById('erreurCode').style.display='none';document.getElementById('popupCode').style.display='flex';setTimeout(()=>document.getElementById('inputCode').focus(),100);}
+function fermerPopup(){document.getElementById('popupCode').style.display='none';actionEnCours=null;}
+function confirmerPopup(){
+  let tape=document.getElementById('inputCode').value.trim();if(tape!==getCode()){document.getElementById('erreurCode').style.display='block';return;}
+  let a=actionEnCours;fermerPopup();if(!a) return;
+  if(a.type==='changer'){let nouveau=prompt('Tape ton NOUVEAU code :');if(!nouveau) return;nouveau=nouveau.trim();if(nouveau.length<4){alert('Code trop court');return;}setCode(nouveau);alert('✅ Code changé : '+nouveau);afficher();return;}
+  let all=getDemandes();
+  if(a.type==='valider'){
+    let r=all[a.index];if(r.statut!=='en_attente'){alert('Déjà traité');return;}
+    r.statut='valide';r.dateValidation=new Date().toISOString();
+    let resStock = remettreEnStock(r.produit, Number(r.qte||0));
+    let resVente = corrigerVente(r);
+    deduireDuJourOriginal(r.dateVente, Number(r.montant||0));
+    saveDemandes(all);
+    alert('✅ Retour validé !\n\n--- STOCK ---\n'+resStock.log.join('\n')+'\n\n--- VENTE ---\n'+resVente.log.join('\n'));
+  }
+  if(a.type==='refuser'){all[a.index].statut='refuse';all[a.index].dateValidation=new Date().toISOString();saveDemandes(all);alert('❌ Refusé. Dans l’historique.');}
+  afficher();
+}
+function changerCode(){actionEnCours={type:'changer',index:-1};document.getElementById('titrePopup').innerText='🔑 Ancien code';document.getElementById('textePopup').innerText='Prouve que c’est toi.';document.getElementById('inputCode').value='';document.getElementById('erreurCode').style.display='none';document.getElementById('popupCode').style.display='flex';}
+afficher();setInterval(afficher,3000);
+</script></body></html>

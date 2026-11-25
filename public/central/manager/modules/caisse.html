@@ -1,0 +1,45 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Caisse</title></head>
+<body style="background:#05070a;color:#fff;font-family:Arial;padding:14px">
+<style>.card{background:#111827;border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:14px}.input{width:100%;background:#000;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:12px;color:#fff;outline:none;margin-bottom:10px}.btn{background:#22c55e;color:#000;border:none;padding:13px;border-radius:12px;font-weight:800;cursor:pointer;width:100%}.row{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06)}.badge{padding:5px 10px;border-radius:100px;font-size:10px;font-weight:800}</style>
+<h2>💰 Caisse du Jour - <span id="siteName"></span></h2>
+<div class="card" style="margin-top:12px"><div>CA du jour (PV) : <b id="caJour" style="color:#22c55e">0 FC</b></div><div>Argent declare : <b id="decl">0 FC</b></div><div>Ecart : <b id="ecart">0 FC</b></div></div>
+<div class="card" style="margin-top:14px"><h3>Declarer ma caisse / Vendeur</h3>
+<select id="vend" class="input"></select>
+<input id="argent" type="number" class="input" placeholder="Argent en main (FC)">
+<input id="note" class="input" placeholder="Note">
+<button class="btn" onclick="valider()">VALIDER LA CAISSE</button></div>
+<div class="card" style="margin-top:14px"><h3>Rapports du jour</h3><div id="list"></div></div>
+<script>
+function fmt(n){return Number(n||0).toLocaleString('fr-FR',{minimumFractionDigits:2})+' FC'}
+function getMe(){try{var u=JSON.parse(localStorage.getItem('user')||'{}');var uid=localStorage.getItem('dub_current_user_id')||u.id||'';var us=JSON.parse(localStorage.getItem('dub_users')||'[]');var me=u;for(var i=0;i<us.length;i++){if(String(us[i].id)===String(uid)){me=us[i];break}}return{site:String(me.siteId||me.siteName||me.site||u.siteId||'victoire').toLowerCase(),nom:me.nom||'GERANT',id:String(uid||me.id||'')}}catch(e){return{site:'victoire',nom:'GERANT',id:''}}}
+var ME=getMe();document.getElementById('siteName').innerText=ME.site.toUpperCase();
+function getVentes(){try{return JSON.parse(localStorage.getItem('dub_ventes')||'[]')}catch(e){return[]}}
+function getRap(){try{return JSON.parse(localStorage.getItem('dub_rapports_caisse')||'[]')}catch(e){return[]}}
+function caDuJour(){
+ var today=new Date().toISOString().slice(0,10);var tot=0;
+ getVentes().forEach(function(v){var s=String(v.siteId||v.site||'').toLowerCase();if(s!==ME.site&&s!=='')return;if(String(v.date||'').slice(0,10)!==today)return;if(String(v.statut||'').toLowerCase().includes('annul'))return;tot+= +v.valeurPV||+v.total||+v.montant||((+v.pv||0)*(+v.qte||1))});
+ return tot;
+}
+function remplirVendeurs(){
+ var us=[];try{us=JSON.parse(localStorage.getItem('dub_users')||'[]')}catch(e){}
+ var h='';us.forEach(function(u){if(String(u.siteId||u.siteName||'').toLowerCase()===ME.site)h+='<option value="'+u.id+'">'+(u.nom||u.name)+'</option>'});
+ document.getElementById('vend').innerHTML=h||'<option value="'+ME.id+'">'+ME.nom+'</option>';
+}
+function valider(){
+ var sel=document.getElementById('vend');var nom=sel.options[sel.selectedIndex].text;var argent=parseFloat(document.getElementById('argent').value||'0');
+ var rap=getRap();var today=new Date().toISOString().slice(0,10);
+ var ca=caDuJour();var ecart=argent-ca;
+ rap.unshift({id:Date.now(),siteId:ME.site,date:today,vendeurNom:nom,vendeurId:sel.value,argentMain:argent,caJour:ca,ecart:ecart,note:document.getElementById('note').value});
+ localStorage.setItem('dub_rapports_caisse',JSON.stringify(rap));alert('Caisse validee ! Ecart : '+fmt(ecart));render();
+}
+function render(){
+ var ca=caDuJour();var today=new Date().toISOString().slice(0,10);
+ var list=getRap().filter(function(r){return r.date===today&&String(r.siteId||'').toLowerCase()===ME.site});
+ var tot=0;list.forEach(function(r){tot+= +r.argentMain||0});
+ document.getElementById('caJour').innerText=fmt(ca);document.getElementById('decl').innerText=fmt(tot);document.getElementById('ecart').innerText=fmt(tot-ca);
+ var h='';if(!list.length)h='<div style="color:#64748b">Aucun rapport aujourd hui</div>';
+ list.forEach(function(r){var c=Math.abs(r.ecart)<1?'rgba(34,197,94,.2);color:#22c55e':'rgba(239,68,68,.2);color:#f87171';h+='<div class="row"><span><b>'+r.vendeurNom+'</b><br><small style="color:#94a3b8">Declare : '+fmt(r.argentMain)+' / CA : '+fmt(r.caJour)+'</small></span><span class="badge" style="background:'+c+'">Ecart '+fmt(r.ecart)+'</span></div>'});
+ document.getElementById('list').innerHTML=h;
+}
+remplirVendeurs();render();
+</script></body></html>

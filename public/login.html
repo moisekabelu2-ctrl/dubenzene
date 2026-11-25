@@ -1,0 +1,65 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Dubenzene-erp V2 - Login</title>
+<style>
+body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;background:#0f1219;margin:0}
+.card{background:#151a26;border:1px solid #232a3d;padding:32px;border-radius:22px;width:360px;color:#fff}
+h2{margin-bottom:24px;font-weight:900} h2 span{color:#facc15}
+input{width:100%;padding:13px;margin:8px 0;border-radius:12px;border:1px solid #232a3d;background:#0f1219;color:#fff;box-sizing:border-box}
+button{width:100%;padding:13px;background:#facc15;color:#000;border:0;margin-top:14px;border-radius:12px;font-weight:900;cursor:pointer;font-size:14px}
+#msg{font-size:12px;margin-top:12px;color:#facc15;text-align:center}
+</style>
+</head>
+<body>
+<div class="card">
+<h2><span>DUBENZENE</span> ERP V2</h2>
+<input id="user" placeholder="admin" value="admin">
+<input id="pass" type="password" placeholder="admin123" value="admin123">
+<button onclick="go()">Connexion</button>
+<p id="msg"></p>
+</div>
+<script>
+async function go(){
+ const username=document.getElementById('user').value.trim();
+ const password=document.getElementById('pass').value.trim();
+ document.getElementById('msg').innerText='Connexion...';
+ try{
+  const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
+  const d=await r.json();
+  if(!r.ok){ document.getElementById('msg').innerText='Erreur: '+(d.error||r.status); return; }
+  
+  const user = d.user || d;
+  localStorage.setItem('user',JSON.stringify(user));
+  localStorage.setItem('dub_current_user_id', user.id || user._id || username);
+  localStorage.setItem('isLogged','true');
+  document.getElementById('msg').innerText='OK Boss ! Role: '+user.role;
+  
+  // === ROUTAGE SELON ROLE ===
+  const role = (user.role||'').toLowerCase();
+  if(role.includes('vendeur')){
+    window.location.href='/vendeurs/index.html?v='+Date.now();
+  } else {
+    window.location.href='/central/app.html';
+  }
+  
+ }catch(e){ document.getElementById('msg').innerText='Erreur reseau: '+e.message; }
+}
+
+// Auto-redirect intelligent selon role
+if(localStorage.getItem('isLogged')==='true'){
+  try{
+    const u = JSON.parse(localStorage.getItem('user')||'{}');
+    if((u.role||'').toLowerCase().includes('vendeur')){
+      window.location.href='/vendeurs/index.html';
+    } else {
+      window.location.href='/central/app.html';
+    }
+  }catch{
+    window.location.href='/central/app.html';
+  }
+}
+</script>
+</body>
+</html>

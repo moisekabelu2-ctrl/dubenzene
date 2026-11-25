@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Vendeur</title>
+<style>body{font-family:Arial;padding:16px;background:#f5f5f7}.card{background:#fff;padding:12px;border-radius:12px;margin-bottom:8px;display:flex;justify-content:space-between;border:1px solid #e5e7eb}.btn{background:#22c55e;border:0;padding:8px 14px;border-radius:8px;font-weight:900}</style>
+</head>
+<body>
+<h2 id="nom">VENDEUR</h2>
+<input id="search" placeholder="Chercher..." style="width:100%;padding:12px;border-radius:10px;border:1px solid #ddd;margin-bottom:12px" oninput="render()">
+<div id="list"></div>
+<script>
+function getSP(){return JSON.parse(localStorage.getItem('dub_sites_produits')||'{}')}
+function render(){
+ let sp=getSP(); let list=[];
+ for(let k in sp){ if(sp[k].length>0) list=sp[k]; }
+ let q=document.getElementById('search').value.toLowerCase();
+ if(q) list=list.filter(p=>p.nom.toLowerCase().includes(q));
+ document.getElementById('list').innerHTML=list.map(p=>`<div class="card"><div><b>${p.nom}</b><br>Stock ${p.stock_site}</div><button class="btn" onclick="alert('Vendu ${p.nom}')">VENDRE</button></div>`).join('')||'Aucun stock - va charger depuis depot dans central/sites.html';
+}
+render();
+</script>
+</body>
+</html>

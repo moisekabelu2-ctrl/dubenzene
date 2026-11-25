@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Assistant IA Hybride - DUBENZENE</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;height:100%}
+body{font-family:Inter,system-ui,sans-serif;background:#0A0E1A;color:#111;overflow:hidden}
+.wrap{width:100%;height:100vh;display:flex;flex-direction:column}
+.top{background:#0A0E1A;color:#fff;padding:12px 20px;display:flex;justify-content:space-between;align-items:center}
+.top-left{display:flex;gap:12px;align-items:center}
+.btn-back{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:9px 14px;border-radius:12px;font-weight:800;cursor:pointer}
+.top h1{margin:0;font-size:20px;font-weight:900}.top h1 span{color:#FACC15}
+.top p{margin:3px 0 0;color:#9AA0B5;font-size:12.5px}
+.pill{padding:8px 12px;border-radius:20px;font-size:11px;font-weight:800}
+.pill.online{background:#14532D;color:#BBF7D0}
+.pill.offline{background:#7F1D1D;color:#FECACA}
+.main{flex:1;display:grid;grid-template-columns:1fr 380px;gap:16px;padding:16px;overflow:hidden}
+.left{background:#fff;border-radius:24px;padding:20px;display:flex;flex-direction:column;overflow:auto}
+.label{font-size:11px;font-weight:900;color:#94A3B8;margin-bottom:10px}
+.chips{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.chips button{border:1px solid #F1F5F9;background:#F8FAFC;border-radius:16px;padding:12px 6px;cursor:pointer}
+.chips span{font-size:24px;display:block}.chips b{font-size:12px;display:block}
+.search{display:flex;gap:10px;margin-top:14px;background:#F8FAFC;padding:6px;border-radius:16px;border:1.5px solid #E2E8F0}
+.search input{flex:1;padding:13px;border:none;background:transparent;font-size:15px;outline:none}
+.btn{background:#EA580C;color:#fff;border:none;border-radius:12px;padding:0 20px;font-weight:800;cursor:pointer}
+.answer{margin-top:14px;background:#FFFBF5;border:1px solid #FED7AA;border-radius:18px;padding:18px;font-size:14.5px;line-height:1.7;white-space:pre-line;overflow:auto}
+.presc{border-radius:16px;padding:14px;margin-top:12px;border:1px solid #E2E8F0}
+.presc-cheap{background:#F0FDF4}.presc-mid{background:#FFFBEB}.presc-premium{background:#FFF7ED}
+.prod-card2{background:#fff;border:1px solid #EDEFF2;border-radius:14px;padding:12px;margin-top:10px}
+.badge{display:inline-block;font-size:11px;font-weight:900;padding:4px 8px;border-radius:20px;margin-top:6px}
+.badge-ok{background:#DCFCE7;color:#166534}.badge-no{background:#FEE2E2;color:#991B1B}.badge-online{background:#DBEAFE;color:#1E40AF}
+.util{font-size:12.5px;color:#334155;background:#F8FAFC;padding:8px 10px;border-radius:10px;margin-top:8px;line-height:1.55}
+.poso{font-size:12.5px;padding:8px 10px;border-radius:10px;margin-top:6px;line-height:1.55}
+.poso-online{background:#F0FDF4;border:1px solid #BBF7D0;color:#14532D}
+.poso-offline{background:#FEF2F2;border:1px solid #FECACA;color:#7F1D1D}
+.poso-loading{background:#FFFBEB;border:1px solid #FDE68A;color:#92400E}
+.btn-link{display:inline-block;margin-top:6px;background:#fff;border:1px solid #2563EB;color:#2563EB;padding:6px 10px;border-radius:20px;font-size:12px;font-weight:800;text-decoration:none}
+.btn-vendre{background:#0A0E1A;color:#FACC15;border:none;padding:10px;border-radius:10px;font-weight:800;cursor:pointer;margin-top:10px;width:100%}
+.right{display:flex;flex-direction:column;gap:14px;overflow:auto}
+.stock{background:#fff;border-radius:24px;padding:16px;flex:1;overflow:auto}
+.stock-item{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px dashed #E2E8F0;font-size:13px}
+.info{background:linear-gradient(135deg,#FACC15,#F97316);border-radius:24px;padding:16px;font-size:13px;line-height:1.6}
+@media(max-width:820px){body{overflow:auto}.wrap{height:auto}.main{grid-template-columns:1fr;overflow:visible}.chips{grid-template-columns:1fr 1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="top"><div class="top-left"><button class="btn-back" onclick="goBack()">← Retour</button><div><h1>Assistant IA <span>HYBRIDE</span></h1><p id="siteInfo">DUBENZENE • En ligne = vérifié • Hors-ligne = strict</p></div></div><div class="pill online" id="netPill">● VÉRIFICATION...</div></div>
+<div class="main">
+<div class="left">
+<div class="label">✦ TAPE LA MALADIE + ENTRÉE ↵ — EN LIGNE JE VÉRIFIE SUR INTERNET, HORS-LIGNE JE NE DEVINE PAS</div>
+<div class="chips">
+<button onclick="rapide('fièvre')"><span>🤒</span><b>Fièvre</b></button>
+<button onclick="rapide('paludisme')"><span>🦟</span><b>Paludisme</b></button>
+<button onclick="rapide('diarrhée')"><span>💧</span><b>Diarrhée</b></button>
+<button onclick="rapide('toux')"><span>😷</span><b>Toux</b></button>
+<button onclick="rapide('gastrite')"><span>🔥</span><b>Gastrite</b></button>
+<button onclick="rapide('mycose')"><span>🍄</span><b>Mycose</b></button>
+<button onclick="rapide('acné')"><span>😶</span><b>Acné</b></button>
+<button onclick="rapide('hémorroïdes')"><span>🩸</span><b>Hémorroïdes</b></button>
+</div>
+<div class="search"><input id="q" placeholder="Tape : fièvre, paludisme... puis Entrée ↵"><button class="btn" onclick="demander()">Analyser ✨</button></div>
+<div class="answer" id="rep">👋 Bonjour Boss.
+
+🟢 EN LIGNE : Je vais chercher le vrai médicament sur Wikipedia. Je te montre la source. Je ne devine plus.
+
+🔴 HORS-LIGNE : Je reste en MODE STRICT. Je ne propose que ce que je connais à 100%. Aucune dose inventée. Lotion / Savon = JAMAIS proposé comme médicament interne.</div>
+<div id="prescList"></div>
+<div id="inconnuList"></div>
+</div>
+<div class="right">
+<div class="stock"><b>📦 Résultat — <span id="siteName2">VICTOIRE</span></b><div style="font-size:12px;color:#64748B;margin-top:4px" id="stockCount">— produits en stock</div><div id="stockBox" style="margin-top:10px"></div></div>
+<div class="info"><b>⚠️ RÈGLE DE SÉCURITÉ</b><br>Je ne donne JAMAIS une dose inventée.<br><br>🟢 En ligne = je cite Wikipedia + bouton "Voir notice"<br>🔴 Hors-ligne = lis la notice dans la boîte<br><br>Si doute → médecin.</div>
+</div>
+</div>
+</div>
+<script>
+function goBack(){ if(window.history.length>1){ window.history.back(); } else { window.location.href='../vendeurs.html'; } }
+function updateNet(){
+  let pill=document.getElementById('netPill');
+  if(navigator.onLine){ pill.innerText='🟢 EN LIGNE — Vérification internet active'; pill.className='pill online'; }
+  else { pill.innerText='🔴 HORS-LIGNE — Mode strict seulement'; pill.className='pill offline'; }
+}
+updateNet(); window.addEventListener('online',updateNet); window.addEventListener('offline',updateNet);
+function getSP(){try{return JSON.parse(localStorage.getItem('dub_sites_produits')||'{}')}catch{return{}}}
+function getCurrentSiteId(){ try{ let u=JSON.parse(localStorage.getItem('user')||'{}'); if(u.siteId) return u.siteId; let uid=localStorage.getItem('dub_current_user_id'); let users=JSON.parse(localStorage.getItem('dub_users')||'[]'); let me=users.find(x=>String(x.id)===String(uid)); if(me&&me.siteId) return me.siteId; if(me&&me.siteName){ let sites=JSON.parse(localStorage.getItem('dub_sites')||'[]'); let s=sites.find(x=>x.nom===me.siteName); if(s) return s.id; } }catch{} return 'victoire'; }
+let SITE_ID=getCurrentSiteId();
+function getStock(p){ return +p.stock||+p.stock_site||+p.quantite||+p.qte||0; }
+function getGrouped(){
+  let sp=getSP(); let list=sp[SITE_ID]||[];
+  if(!list.length){ for(let k in sp){ if(k.toLowerCase()===String(SITE_ID).toLowerCase()){ list=sp[k]; SITE_ID=k; break; } } }
+  if(!list.length){ for(let k in sp){ if(sp[k]&&sp[k].length>0){ list=sp[k]; SITE_ID=k; break; } } }
+  list=list.filter(p=>!p.desactive&&p.actif!==false&&p.statut!=='desactive');
+  let map={}; list.forEach(p=>{ let key=(p.nom||'').toLowerCase().trim(); if(!key) return; if(!map[key]) map[key]={key:key,nom:p.nom,stock:0,pv:+p.pv||+p.prix||0,pa:+p.pa||0,lots:[],categorie:p.categorie||p.specialite||''}; let s=getStock(p); map[key].stock+=s; map[key].lots.push('Lot '+(p.lot||'-')+' : '+s); });
+  return Object.values(map);
+}
+document.getElementById('siteName2').innerText=(SITE_ID||'VICTOIRE').toUpperCase();
+// ✅ CORRIGÉ : On n'affiche PLUS tous les produits au départ
+// On affiche seulement le nombre total, et la liste seulement après une recherche
+function afficherStockInitial(){
+  let total = getGrouped().filter(p=>p.stock>0).length;
+  document.getElementById('stockCount').innerText = total + ' produits en stock — tape une maladie pour voir';
+  document.getElementById('stockBox').innerHTML = '<p style="color:#94A3B8;font-size:13px;line-height:1.6">👆 Tape une maladie à gauche.<br><br>Je vais afficher <b>seulement</b> les produits pour cette maladie.<br><br>Je n\'affiche plus tout le stock.</p>';
+}
+// ✅ Après recherche : on affiche SEULEMENT les produits trouvés pour cette maladie
+function afficherResultatsSeulement(liste, maladie){
+  let box = document.getElementById('stockBox');
+  let cnt = document.getElementById('stockCount');
+  if(!liste.length){
+    cnt.innerText = '0 produit pour : ' + maladie;
+    box.innerHTML = '<p style="color:#991B1B;font-size:13px">❌ Aucun produit pour "'+maladie+'" dans ton stock.</p>';
+    return;
+  }
+  cnt.innerText = liste.length + ' produit(s) pour : ' + maladie;
+  box.innerHTML = liste.map(p=>`<div class="stock-item"><div><b>${p.nom}</b><br><small>${p.lots.join(' | ')}</small><br><b style="color:#16a34a">PV ${p.pv.toLocaleString()} CDF</b><br><small>Cat: ${p.categorie||'—'}</small></div><div><b>Stock: ${p.stock}</b></div></div>`).join('');
+}
+afficherStockInitial();
+function norm(s){ return (s||'').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim(); }
+const BASE_STRICTE = [
+  { noms:["artemether lumefantrine","artemether + lumefantrine","coartem","artemether","lumefantrine"], maladie:"paludisme", util:"Traitement du paludisme confirmé par test TDR.", exclu:["lotion","creme","savon","shampoing","lait","gel douche"] },
+  { noms:["quinine","quinine sulfate"], maladie:"paludisme", util:"Traitement du paludisme, surtout paludisme grave. Sur ordonnance.", exclu:["lotion","savon"] },
+  { noms:["paracetamol","paracetamol 500","doliprane","efferalgan"], maladie:"fievre", util:"Fait baisser la fièvre et calme la douleur.", exclu:[] },
+  { noms:["ibuprofene","ibuprofen","brufen"], maladie:"fievre", util:"Calme douleur + inflammation.", exclu:[] },
+  { noms:["sro","sel de rehydratation orale","ors"], maladie:"diarrhee", util:"Remplace l'eau et les sels perdus dans la diarrhée.", exclu:[] },
+  { noms:["zinc sulfate","zinc","sulfate de zinc"], maladie:"diarrhee", util:"Aide à arrêter la diarrhée plus vite, surtout chez l'enfant.", exclu:["lotion","creme","pommade","savon"] },
+  { noms:["loperamide","imodium"], maladie:"diarrhee", util:"Ralentit la diarrhée. Ne pas donner si sang.", exclu:[] },
+  { noms:["omeprazole","pantoprazole"], maladie:"gastrite", util:"Diminue l'acide de l'estomac.", exclu:[] },
+  { noms:["maalox","hydroxyde aluminium"], maladie:"gastrite", util:"Calme rapidement la brûlure d'estomac.", exclu:[] },
+  { noms:["carbocisteine","carbocysteine"], maladie:"toux", util:"Aide à cracher, dégage les bronches.", exclu:[] },
+  { noms:["clotrimazole","miconazole","econazole","ketoconazole","nystatine","fluconazole","griseofulvine"], maladie:"mycose", util:"Tue le champignon (mycose).", exclu:["lotion cosm","lait de toilette","savon"] },
+  { noms:["benzoyl peroxide","peroxyde de benzoyle","adapalene"], maladie:"acne", util:"Traitement des boutons d'acné.", exclu:["lotion","lait","savon","creme hydratante"] },
+  { noms:["daflon","diosmine"], maladie:"hemorroides", util:"Réduit douleur et gonflement des hémorroïdes.", exclu:[] },
+  { noms:["sulfate ferreux","fer + acide folique","acide folique","ferplex"], maladie:"anemie", util:"Fabrique le sang, lutte contre l'anémie.", exclu:["lotion"] },
+  { noms:["albendazole","mebendazole","zentel"], maladie:"vers", util:"Tue les vers intestinaux.", exclu:[] },
+  { noms:["loratadine","cetirizine"], maladie:"allergie", util:"Calme allergie, démangeaison.", exclu:[] },
+  { noms:["povidone iodee","betadine","chlorhexidine"], maladie:"plaie", util:"Désinfecte la plaie.", exclu:["savon"] },
+  { noms:["vitamine c","acide ascorbique","vitamine a","multivitamine"], maladie:"vitamine", util:"Complète l'alimentation.", exclu:["lotion","savon"] },
+];
+function estExclu(nomNorm, excluList){
+  for(let e of excluList){ if(nomNorm.includes(norm(e))) return true; }
+  if(nomNorm.includes("lotion") || nomNorm.includes("lait de toilette") || nomNorm.includes("savon") || nomNorm.includes("shampoing") || nomNorm.includes("gel douche")) return true;
+  return false;
+}
+function classerProduit(p){
+  let n = norm(p.nom);
+  if(p.categorie){
+    let c = norm(p.categorie);
+    if(c.includes("lotion") || c.includes("cosmetique") || c.includes("hygiene") || c.includes("savon")) return { statut:"COSMETIQUE", raison:"Catégorie dans ton stock : " + p.categorie };
+  }
+  for(let entry of BASE_STRICTE){
+    for(let nomRef of entry.noms){
+      if(n.includes(norm(nomRef))){
+        if(estExclu(n, entry.exclu)) return { statut:"EXCLU", raison:"Ressemble à '"+nomRef+"' mais c'est une lotion / cosmétique, pas un médicament pour "+entry.maladie };
+        return { statut:"OK", maladie: entry.maladie, util: entry.util, ref: nomRef };
+      }
+    }
+  }
+  return { statut:"INCONNU", raison:"Je ne connais pas ce produit à 100%. Je ne propose pas." };
+}
+function chercher(maladieNorm){
+  let list = getGrouped().filter(p=>p.stock>0 && p.pv>0);
+  let ok=[], inconnu=[], exclu=[];
+  for(let p of list){
+    let cl = classerProduit(p); p._class = cl;
+    if(cl.statut==="OK" && norm(cl.maladie)===maladieNorm) ok.push(p);
+    else if(cl.statut==="INCONNU") inconnu.push(p);
+    else if(cl.statut==="EXCLU" || cl.statut==="COSMETIQUE") exclu.push(p);
+  }
+  ok.sort((a,b)=>a.pv-b.pv);
+  return {ok, inconnu, exclu, tous:list};
+}
+function buildPresc(produits){
+  let sorted=[...produits].sort((a,b)=>a.pv-b.pv);
+  let cheap=sorted[0]; let mid=sorted[Math.floor(sorted.length/2)]||cheap; let premium=sorted[sorted.length-1];
+  let p1={titre:"💚 PRESCRIPTION 1 — LA MOINS CHÈRE",desc:"Pour client qui n'a pas beaucoup d'argent",items:[cheap],total:cheap.pv,color:"presc-cheap"};
+  let m2=sorted.length>=2?[mid,sorted[0]]:[mid]; m2=[...new Map(m2.map(p=>[p.key,p])).values()];
+  let p2={titre:"💛 PRESCRIPTION 2 — MOYENNE",desc:"Bon équilibre",items:m2,total:m2.reduce((a,p)=>a+p.pv,0),color:"presc-mid"};
+  let m3=sorted.length>=3?[premium,sorted[sorted.length-2],sorted[0]]:[premium,cheap]; m3=[...new Map(m3.map(p=>[p.key,p])).values()];
+  let p3={titre:"🧡 PRESCRIPTION 3 — LA PLUS COÛTEUSE",desc:"Traitement complet",items:m3,total:m3.reduce((a,p)=>a+p.pv,0),color:"presc-premium"};
+  return [p1,p2,p3];
+}
+async function fetchRealInfo(nomProduit){
+  try{
+    let q = encodeURIComponent(nomProduit.trim());
+    let res = await fetch(`https://fr.wikipedia.org/api/rest_v1/page/summary/${q}`);
+    if(!res.ok) return null;
+    let data = await res.json();
+    if(!data.extract) return null;
+    return { texte: data.extract.slice(0,480), source: "Wikipedia — " + data.title, url: data.content_urls?.desktop?.page || `https://fr.wikipedia.org/wiki/${q}` };
+  }catch(e){ return null; }
+}
+async function iaLocale(q0){
+  let q=norm(q0);
+  let res=chercher(q);
+  let prescList=document.getElementById('prescList');
+  let incList=document.getElementById('inconnuList');
+  prescList.innerHTML=''; incList.innerHTML='';
+  // ✅ À droite : seulement les produits de cette maladie, pas tout le stock
+  afficherResultatsSeulement(res.ok, q0);
+  let titre="🔍 ANALYSE HYBRIDE : " + q0.toUpperCase();
+  let mode = navigator.onLine ? "🟢 MODE EN LIGNE — Je vérifie chaque médicament sur Wikipedia" : "🔴 MODE HORS-LIGNE — Mode strict, aucune dose inventée";
+  if(!res.tous.length) return titre+"\n\n"+mode+"\n\n⚠️ STOCK VIDE.";
+  if(!res.ok.length){
+    let txt = titre+"\n\n"+mode+"\n\n❌ AUCUN MÉDICAMENT VÉRIFIÉ pour '"+q0+"' dans ton stock.\n\nJ'ai vérifié "+res.tous.length+" produits, je préfère ne rien proposer que proposer quelque chose de faux.";
+    if(res.exclu.length) txt += "\n\n🚫 EXCLUS (pas proposés) :\n" + res.exclu.map(p=>"- "+p.nom+" → "+p._class.raison).join("\n");
+    txt += "\n\n⚠️ Ne vends pas une lotion / savon pour paludisme, fièvre ou diarrhée.";
+    return txt;
+  }
+  let presc=buildPresc(res.ok);
+  let texte=titre+"\n\n"+mode+"\n\n✅ "+res.ok.length+" médicament(s) VÉRIFIÉ(S) pour "+q0+" :\n\nChoisis UNE prescription.";
+  if(!navigator.onLine) texte += "\n\n⚠️ HORS-LIGNE : Pour la dose exacte, lis LA NOTICE dans la boîte.";
+  for(let idx=0; idx<presc.length; idx++){
+    let p=presc[idx];
+    let div=document.createElement('div'); div.className='presc '+p.color;
+    div.innerHTML=`<div style="display:flex;justify-content:space-between"><b>${p.titre}</b><b>${p.total.toLocaleString()} CDF</b></div><div style="font-size:12px;color:#64748B">${p.desc}</div>`;
+    for(let it of p.items){
+      let card=document.createElement('div'); card.className='prod-card2';
+      let safeKey = it.key.replace(/[^a-z0-9]/gi,'');
+      let googleUrl = `https://www.google.com/search?q=${encodeURIComponent(it.nom + ' notice posologie')}`;
+      card.innerHTML=`<div style="display:flex;justify-content:space-between"><b>💊 ${it.nom}</b><b>${it.pv.toLocaleString()} CDF</b></div><div style="font-size:12px;color:#64748B">Stock: ${it.stock} • ${it.lots.join(' | ')}</div><span class="badge badge-ok">✅ VÉRIFIÉ — ${it._class.ref}</span><div class="util"><b>💡 À quoi ça sert ?</b><br>${it._class.util}</div><div class="poso poso-loading" id="info-${idx}-${safeKey}">⏳ ${navigator.onLine ? 'Vérification en ligne sur Wikipedia...' : 'HORS-LIGNE — Je ne donne pas de dose inventée.'}</div><a class="btn-link" href="${googleUrl}" target="_blank">📖 Voir la vraie notice sur Google →</a>`;
+      div.appendChild(card);
+      if(navigator.onLine){
+        fetchRealInfo(it.nom).then(info=>{
+          let el=document.getElementById(`info-${idx}-${safeKey}`);
+          if(!el) return;
+          if(info){
+            el.className='poso poso-online';
+            el.innerHTML=`<b>🟢 Vérifié en ligne — ${info.source} :</b><br>${info.texte}<br><br><small>Pour la dose exacte, lis la notice dans la boîte. Ne devine pas.</small><br><a href="${info.url}" target="_blank" style="color:#14532D;font-weight:800">Voir la page Wikipedia →</a>`;
+          } else {
+            el.className='poso poso-offline';
+            el.innerHTML=`<b>⚠️ Pas de fiche Wikipedia trouvée pour "${it.nom}".</b><br>Je ne devine pas la dose. Clique sur "Voir la vraie notice sur Google" ou lis la notice dans la boîte.`;
+          }
+        });
+      } else {
+        let el=card.querySelector('.poso');
+        el.className='poso poso-offline';
+        el.innerHTML=`<b>🔴 HORS-LIGNE — Je ne donne pas de dose inventée.</b><br>Ouvre la boîte et lis LA NOTICE.<br>Si tu n'es pas sûr → n'envoie pas, envoie chez le médecin.`;
+      }
+    }
+    let total=document.createElement('div'); total.style.cssText='display:flex;justify-content:space-between;font-weight:900;margin-top:10px'; total.innerHTML=`<span>TOTAL</span><span>${p.total.toLocaleString()} CDF</span>`;
+    div.appendChild(total);
+    let btn=document.createElement('button'); btn.className='btn-vendre'; btn.innerText='🛒 Vendre cette prescription →'; btn.onclick=()=>vendrePresc(idx,q0);
+    div.appendChild(btn);
+    prescList.appendChild(div);
+  }
+  window._lastPresc=presc;
+  if(res.inconnu.length){
+    incList.innerHTML = `<div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:14px;padding:14px;margin-top:12px;font-size:13px"><b>⚠️ PRODUITS QUE JE NE CONNAIS PAS — JE NE LES PROPOSE PAS :</b><br>${res.inconnu.map(p=>"- "+p.nom+" → "+p._class.raison).join("<br>")}<br><br>Envoie-moi la photo de ces boîtes, je vais les apprendre correctement.</div>`;
+  }
+  return texte;
+}
+function vendrePresc(idx, maladie){
+  let p=window._lastPresc[idx]; if(!p) return;
+  let sp=getSP(); let list=sp[SITE_ID]||[];
+  for(let item of p.items){ let c=list.find(x=>(x.nom||'').toLowerCase().trim()===item.key); if(c){ let s=getStock(c); c.stock=s-1; c.stock_site=s-1; c.quantite=s-1; c.qte=s-1; } }
+  sp[SITE_ID]=list; localStorage.setItem('dub_sites_produits',JSON.stringify(sp));
+  let v=JSON.parse(localStorage.getItem('dub_ventes')||'[]');
+  p.items.forEach(it=>{ v.unshift({id:Date.now()+Math.random(),siteId:SITE_ID,produit:it.nom,qte:1,pa:it.pa,pv:it.pv,valeur:it.pa,valeurPV:it.pv,date:new Date().toISOString(),via:'IA HYBRIDE - '+maladie}); });
+  localStorage.setItem('dub_ventes',JSON.stringify(v));
+  // ✅ Après vente : on rafraîchit seulement les résultats de cette maladie, pas tout le stock
+  let res = chercher(norm(maladie));
+  afficherResultatsSeulement(res.ok, maladie);
+  alert('✅ Prescription vendue : '+p.titre+'\nTotal : '+p.total.toLocaleString()+' CDF');
+}
+function rapide(t){ document.getElementById('q').value=t; demander(); }
+function demander(){
+  let q=document.getElementById('q').value.trim();
+  if(!q){ alert("Tape la maladie"); return; }
+  document.getElementById('rep').innerText="✨ Analyse hybride... Mode : " + (navigator.onLine ? "EN LIGNE" : "HORS-LIGNE");
+  document.getElementById('prescList').innerHTML='';
+  setTimeout(async()=>{ document.getElementById('rep').innerText=await iaLocale(q); },200);
+}
+document.getElementById('q').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); demander(); } });
+</script>
+</body>
+</html>

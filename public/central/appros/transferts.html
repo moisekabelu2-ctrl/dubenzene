@@ -1,0 +1,39 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Transfert</title><script src="https://cdn.tailwindcss.com"></script></head>
+<body class="bg-slate-50 p-4"><div class="max-w-3xl mx-auto bg-white p-6 rounded-2xl border">
+<h2 class="font-bold text-xl mb-4">🚚 Transfert Dépôt → Site</h2>
+<select id="site" class="w-full p-3 border rounded-xl bg-slate-50 font-bold mb-3"></select>
+<input id="search" placeholder="Chercher produit dans dépôt (ex: para)..." class="w-full p-3 border rounded-xl mb-3" oninput="filterProd()">
+<select id="prod" class="w-full p-3 border rounded-xl mb-3" size="8"></select>
+<div class="grid grid-cols-2 gap-3">
+<input id="qte" type="number" placeholder="Quantité à envoyer" class="p-3 border rounded-xl">
+<input id="dispo" disabled placeholder="Dispo: -" class="p-3 border rounded-xl bg-slate-100">
+</div>
+<button onclick="transfert()" class="w-full mt-4 bg-slate-900 text-white p-4 rounded-xl font-bold">Envoyer vers Site →</button>
+<div id="msg" class="mt-4"></div>
+<a href="index.html" class="block mt-6 text-center text-slate-500">← Menu</a>
+</div>
+<script>
+let depot=[];
+function init(){
+ let sites=JSON.parse(localStorage.getItem('dub_sites_profiles')||'[]');
+ document.getElementById('site').innerHTML='<option value="">-- Choisir Site --</option>'+sites.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+ depot=JSON.parse(localStorage.getItem('dub_depot_produits')||localStorage.getItem('pharma_stock')||'[]');
+ render(depot);
+ document.getElementById('prod').addEventListener('change', e=>{ let p=depot.find(x=>x.id==e.target.value); document.getElementById('dispo').value='Dispo: '+(p.qte||p.stock||0); });
+}
+function render(list){ document.getElementById('prod').innerHTML=list.map(p=>`<option value="${p.id}">${p.nom||p.name} | Stock:${p.qte||p.stock} | Lot:${p.lot}</option>`).join(''); }
+function filterProd(){ let q=document.getElementById('search').value.toLowerCase(); render(depot.filter(p=>(p.nom||p.name||'').toLowerCase().includes(q))); }
+function transfert(){
+ const siteId=document.getElementById('site').value, prodId=document.getElementById('prod').value, q=parseInt(document.getElementById('qte').value);
+ if(!siteId||!prodId||!q) return alert('Choisis site, produit, quantité');
+ let p=depot.find(x=>x.id==prodId); if((p.qte||p.stock)<q) return alert('Stock insuffisant au dépôt');
+ p.qte=(p.qte||p.stock)-q; p.stock=p.qte;
+ localStorage.setItem('dub_depot_produits',JSON.stringify(depot)); localStorage.setItem('pharma_stock',JSON.stringify(depot));
+ let all=JSON.parse(localStorage.getItem('dub_sites_produits')||'{}'); if(!all[siteId]) all[siteId]=[];
+ let ex=all[siteId].find(x=>(x.nom===p.nom||x.name===p.nom)&&x.lot===p.lot);
+ if(ex){ ex.qte=(ex.qte||0)+q; ex.stock=ex.qte; } else { all[siteId].push({...p, qte:q, stock:q, id:Date.now()}); }
+ localStorage.setItem('dub_sites_produits',JSON.stringify(all));
+ document.getElementById('msg').innerHTML=`<div class="bg-green-50 text-green-700 p-3 rounded-xl">✅ ${q} x ${p.nom||p.name} envoyé vers ${siteId}</div>`; render(depot);
+}
+init();
+</script></body></html>

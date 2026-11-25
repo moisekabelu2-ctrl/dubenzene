@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DUBENZENE - VENTE</title>
+<link rel="stylesheet" href="vente/style.css">
+</head>
+<body>
+<div style="min-height:100vh;background:#05070a;padding:14px;font-family:Arial">
+<div id="toast"></div>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+  <div style="display:flex;gap:12px;align-items:center"><div style="width:44px;height:44px;border-radius:12px;background:#eab308;display:flex;align-items:center;justify-content:center">💎</div><div><h1 style="font-size:20px;color:white;margin:0">DUBENZENE <span style="color:#22c55e" id="siteName">VICTOIRE</span></h1><div style="font-size:10px;color:#64748b" id="vendeurName">VENDEUR</div></div></div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <!-- ✅ NOUVEAU : BADGE TAUX COMPTOIR - gérant + vendeur voient le taux de leur site -->
+    <div id="badgeTauxComptoir" style="display:inline-flex;align-items:center;gap:6px;background:#f59e0b;color:#000;padding:7px 12px;border-radius:100px;font-size:12px;font-weight:800;white-space:nowrap">💱 TAUX : <span id="tauxComptoirHeader">...</span></div>
+    <div style="font-size:12px;color:#94a3b8" id="heure"></div>
+  </div>
+</div>
+<div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;overflow-x:auto;padding-bottom:2px">
+  <div id="ongletsVente" style="display:flex;gap:6px;overflow-x:auto;flex:1"></div>
+  <button onclick="nouvelleVente()" style="flex-shrink:0;padding:8px 12px;border-radius:100px;background:#22c55e;border:none;font-weight:800;cursor:pointer;color:#000;font-size:12px;white-space:nowrap">+ Nouvelle</button>
+  <button onclick="fermerTousOnglets()" style="flex-shrink:0;padding:8px 12px;border-radius:100px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#f87171;font-weight:800;cursor:pointer;font-size:12px;white-space:nowrap">X Tout fermer</button>
+</div>
+<div class="grid-vendre" style="display:grid;grid-template-columns:1fr 380px;gap:14px">
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <div class="card" style="padding:14px">
+      <div style="display:grid;grid-template-columns:1.2fr 0.8fr;gap:10px"><input id="client" class="input" placeholder="Nom client..."><input id="phone" class="input" placeholder="081..."></div>
+      <input id="search" class="input" placeholder="🔍 Recherche produit..." style="margin-top:10px;height:50px;font-weight:800;border:2px solid #22c55e" autofocus>
+    </div>
+    <div class="card" style="padding:14px;min-height:420px">
+      <div style="display:flex;justify-content:space-between"><b style="font-size:12px;color:white">PRODUITS - <span id="countProd">0</span></b><span id="pageInfo"></span></div>
+      <div id="listProd" class="prod-grid" style="max-height:520px;overflow:auto;margin-top:10px"></div>
+      <div id="pagination" style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:12px"></div>
+    </div>
+    <div class="card" style="padding:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><b style="font-size:13px;color:white">🧾 GESTION PROFORMAS</b><span id="statProformas" style="font-size:11px;color:#94a3b8"></span></div>
+      <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+        <button class="filtre actif" id="filtreTOUT" onclick="setFiltreProforma('TOUT')">Toutes</button>
+        <button class="filtre" id="filtrePROFORMA" onclick="setFiltreProforma('PROFORMA')">⏳ En attente</button>
+        <button class="filtre" id="filtreVENTE" onclick="setFiltreProforma('VENTE')">✅ Vendues</button>
+        <button class="filtre" id="filtreANNULEE" onclick="setFiltreProforma('ANNULEE')">❌ Annulées</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <input id="searchProforma" class="input" placeholder="🔍 Client, N° proforma, téléphone..." style="padding:10px 12px" oninput="renderProformas()">
+        <button onclick="exporterProformas()" style="padding:10px 14px;border-radius:12px;background:#fff;color:#000;border:none;font-weight:800;cursor:pointer;white-space:nowrap;font-size:12px">⬇ CSV</button>
+      </div>
+      <div id="listProformas" style="margin-top:10px"></div>
+    </div>
+  </div>
+  <div class="card" style="padding:16px;position:sticky;top:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center"><h3 style="font-size:14px;color:white;margin:0">🧾 PANIER <span id="badgePanier" style="background:#22c55e;color:black;padding:4px 10px;border-radius:100px;font-size:10px;font-weight:800">0</span></h3><button class="btn-vider" onclick="vider()">VIDER</button></div>
+    <div id="panier" style="min-height:200px;max-height:340px;overflow:auto;margin-top:10px"></div>
+    <div style="border-top:1px solid rgba(255,255,255,0.08);margin-top:12px;padding-top:12px">
+      <div style="background:#020617;border:1px solid rgba(34,197,94,0.3);border-radius:16px;padding:14px"><div id="fcBig" style="font-size:24px;font-weight:700;color:white">0,00 FC</div><div id="usdSmall" style="font-size:11px;color:#64748b">0 produit(s)</div></div>
+      <input id="recu" class="input" placeholder="Reçu..." inputmode="numeric" style="margin-top:12px"><div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12px"><span style="color:#94a3b8">Rendu:</span><b id="rendu" style="color:#facc15">0,00 FC</b></div>
+      <button onclick="encaisser()" class="green" style="width:100%;margin-top:14px;padding:15px;border-radius:14px;font-weight:800;border:none;cursor:pointer">✅ ENCAISSER</button>
+      <button onclick="proforma()" style="width:100%;margin-top:8px;padding:13px;border-radius:14px;font-weight:800;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:#fff;cursor:pointer">🧾 PROFORMA</button>
+      <button onclick="reimprimerDerniere()" style="width:100%;margin-top:8px;padding:11px;border-radius:14px;font-weight:800;border:1px solid rgba(255,255,255,0.15);background:transparent;color:#94a3b8;cursor:pointer">🖨️ RÉIMPRIMER DERNIÈRE</button>
+      <div id="boxAnnuler" style="display:none;margin-top:10px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:14px;padding:12px">
+        <div style="font-size:11px;color:#fca5a5">Derniere vente : <b id="txtDerniereVente" style="color:#fff">-</b></div>
+        <button onclick="annulerDerniereVente()" style="width:100%;margin-top:8px;padding:11px;border-radius:10px;background:#ef4444;color:#fff;border:none;font-weight:800;cursor:pointer">↩ ANNULER CETTE VENTE</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="factureModal" class="thermal-print" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;overflow:auto;padding:12px">
+  <div style="max-width:300px;margin:20px auto"><div id="factureContent" class="thermal"></div>
+  <div class="no-print" style="text-align:center;margin-top:10px">
+    <button onclick="imprimerThermal('factureModal')" style="padding:12px 20px;background:#16a34a;color:#fff;border:none;border-radius:10px;font-weight:800;cursor:pointer">🖨️ IMPRIMER</button>
+    <button id="btnConvertir" onclick="convertirProforma()" style="display:none;padding:12px 20px;background:#eab308;color:#000;border:none;border-radius:10px;font-weight:800;cursor:pointer;margin-left:8px">✅ CONVERTIR EN VENTE</button>
+    <button onclick="fermerFacture()" style="padding:12px 20px;background:#fff;border:none;border-radius:10px;font-weight:800;cursor:pointer;margin-left:8px;margin-top:8px">Fermer</button>
+  </div></div>
+</div>
+</div>
+<script src="vente/data.js"></script>
+<script src="vente/panier.js"></script>
+<script src="vente/facture.js"></script>
+<script src="vente/proforma.js"></script>
+<script>
+// ✅ GERANT -> VENDRE UNE PROFORMA : on arrive depuis l'historique gérant
+function convertirProformaParNum(num){
+  var list = [];
+  try{ list = JSON.parse(localStorage.getItem('dub_proformas')||'[]'); }catch(e){ list=[]; }
+  var p = null;
+  for(var i=0;i<list.length;i++){ if(list[i].num===num){ p=list[i]; break; } }
+  if(!p){ alert('Proforma '+num+' introuvable'); return; }
+  if(p.statut==='VENTE'){ alert('Cette proforma est deja vendue : '+(p.venteNum||'')); return; }
+  if(p.statut==='ANNULEE'){ alert('Cette proforma est annulee'); return; }
+  DERNIERE_PROFORMA = p;
+  afficherProformaThermal(p);
+  setTimeout(function(){
+    if(typeof convertirProforma==='function') convertirProforma();
+  }, 300);
+}
+
+// ✅ TAUX COMPTOIR - lit le taux fixé en Paramètres pour le site de l'utilisateur
+function getTauxComptoir(){
+  var site = '';
+  try{
+    var u = JSON.parse(localStorage.getItem('user')||'{}');
+    site = String(u.site||u.siteName||u.siteId||document.getElementById('siteName').innerText||'victoire').toLowerCase();
+  }catch(e){ site = 'victoire'; }
+  var t = Number(localStorage.getItem('dub_taux_comptoir_'+site)||'0');
+  return t > 0 ? t : 0;
+}
+function afficherTauxComptoir(){
+  var el = document.getElementById('tauxComptoirHeader');
+  if(!el) return;
+  var t = getTauxComptoir();
+  el.innerText = t > 0 ? '1 $ = ' + t.toLocaleString('fr-FR') + ' FC' : 'Non fixé';
+  var badge = document.getElementById('badgeTauxComptoir');
+  if(badge && t <= 0){ badge.style.background = '#dc3545'; badge.style.color = '#fff'; }
+}
+
+function init(){
+  var u={}; try{ u=JSON.parse(localStorage.getItem('user')||'{}') }catch(e){}
+  document.getElementById('vendeurName').innerText=u.nom||u.name||u.username||'VENDEUR';
+  document.getElementById('search').addEventListener('input', onSearchInput);
+  document.getElementById('recu').addEventListener('input', function(){ calc(); sauverPanierActuel(); sauverBrouillons(); });
+  document.getElementById('client').addEventListener('input', function(){ sauverPanierActuel(); sauverBrouillons(); });
+  document.getElementById('phone').addEventListener('input', function(){ sauverPanierActuel(); sauverBrouillons(); });
+  if(BROUILLONS.length===0){ nouvelleVente(); }
+  else {
+    if(PANIER_ACTIF_ID && trouverBrouillon(PANIER_ACTIF_ID)){ ouvrirVente(PANIER_ACTIF_ID); }
+    else { PANIER_ACTIF_ID = BROUILLONS[0].id; ouvrirVente(PANIER_ACTIF_ID); }
+  }
+  afficherBoutonAnnuler();
+  render();
+  renderProformas();
+
+  // ✅ Affiche le taux comptoir
+  afficherTauxComptoir();
+  setInterval(afficherTauxComptoir, 5000);
+
+  // ✅ AJOUT GERANT : si on arrive avec ?convertir=PF-xxx ou localStorage
+  var params = new URLSearchParams(window.location.search);
+  var numConvertir = params.get('convertir') || localStorage.getItem('dub_convertir_proforma_num');
+  if(numConvertir){
+    localStorage.removeItem('dub_convertir_proforma_num');
+    try{ window.history.replaceState({}, '', window.location.pathname); }catch(e){}
+    setTimeout(function(){ convertirProformaParNum(numConvertir); }, 600);
+  }
+
+  setInterval(function(){ document.getElementById('heure').innerText=new Date().toLocaleTimeString(); },1000);
+}
+init();
+</script>
+</body>
+</html>

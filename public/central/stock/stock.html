@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stock</title>
+<link rel="stylesheet" href="stock.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+<div class="header">
+<div><h1 class="h1">Stock</h1></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+<div class="excel-wrap">
+<button onclick="toggleExcelMenu(event)" class="btn btn-yellow">📊 Excel ▾</button>
+<div id="excelMenu" class="excel-menu">
+<button class="excel-item yellow" onclick="closeExcelMenu();telechargerModele()">📄 Dépôt</button>
+<button class="excel-item green" onclick="closeExcelMenu();telechargerModeleSite()">📄 Site</button>
+<div class="excel-sep"></div>
+<button class="excel-item yellow" onclick="closeExcelMenu();document.getElementById('fileImportDepot').click()">📥 Dépôt</button>
+<button class="excel-item green" onclick="closeExcelMenu();openImportSiteModal()">📥 Site</button>
+<div class="excel-sep"></div>
+<button class="excel-item yellow" onclick="closeExcelMenu();exportDepot()">⬇️ Dépôt</button>
+<button class="excel-item green" onclick="closeExcelMenu();openExportSiteModal()">⬇️ Site</button>
+<button class="excel-item" onclick="closeExcelMenu();exportGlobal()">🌍 Global</button>
+</div>
+</div>
+<input type="file" id="fileImportDepot" accept=".xlsx,.xls,.csv" style="display:none" onchange="importExcelDepot(event)">
+<input type="file" id="fileImportSite" accept=".xlsx,.xls,.csv" style="display:none" onchange="importExcelSite(event)">
+<div class="excel-wrap">
+<button onclick="toggleViderMenu(event)" class="btn btn-danger">⚠️ Vider / Zéro ▾</button>
+<div id="viderMenu" class="excel-menu">
+<button class="excel-item blue" onclick="closeViderMenu();openChangePassword()">🔑 Mot de Passe</button>
+<div class="excel-sep"></div>
+<button class="excel-item red" onclick="closeViderMenu();openClearDepot()">🗑️ Vider Dépôt</button>
+<button class="excel-item red" onclick="closeViderMenu();openClearSite()">🗑️ Vider 1 Site</button>
+<button class="excel-item red" onclick="closeViderMenu();openClearAll()">🗑️ Vider Tout</button>
+<div class="excel-sep"></div>
+<button class="excel-item orange" onclick="closeViderMenu();openZeroQty()">0️⃣ Qté = 0 Tout</button>
+<button class="excel-item purple" onclick="closeViderMenu();openZeroSiteQty()">0️⃣ Qté = 0 Site</button>
+</div>
+</div>
+</div>
+</div>
+
+<button onclick="syncSitesVersDepotTout()" style="width:100%;padding:14px;border-radius:12px;background:#facc15;color:#000;font-weight:900;cursor:pointer;border:none;margin-bottom:16px;font-size:14px">🔄 Sync Sites → Dépôt</button>
+
+<div id="importStatus" style="display:none"></div>
+
+<div style="background:#171a23;border:1px solid #facc15;border-radius:16px;padding:14px 16px;margin-bottom:16px">
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><b style="font-size:14px">📦 Articles</b><span id="articlesTotal" style="font-size:12px;color:#facc15;font-weight:800"></span></div>
+<div id="articlesBar" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px"></div>
+</div>
+
+<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
+<div class="excel-wrap">
+<button id="btnVue" onclick="toggleVueMenu(event)" class="btn btn-vue">👁️ 🌍 Global ▾</button>
+<div id="vueMenu" class="excel-menu left">
+<button class="excel-item" id="vueBtn-depot" onclick="closeVueMenu();setVue('depot')">🏭 Dépôt</button>
+<button class="excel-item active" id="vueBtn-global" onclick="closeVueMenu();setVue('global')">🌍 Global</button>
+<button class="excel-item" id="vueBtn-sites" onclick="closeVueMenu();setVue('sites')">🏪 Tous les Sites</button>
+<button class="excel-item" id="vueBtn-site" onclick="closeVueMenu();setVue('site')">📍 Un Site</button>
+</div>
+</div>
+<select id="selSite" class="select" onchange="onSiteChange()" style="display:none"></select>
+<span id="vueLabel" style="font-size:12px;color:#6a7085"></span>
+</div>
+
+<div class="grid4">
+  <div class="card"><div class="card-label">Qté Vue</div><div class="card-value" id="stockVue">0</div><div class="card-sub" id="stockVueSub">🌍 Global</div></div>
+  <div class="card"><div class="card-label">Valeur PA Vue</div><div class="card-value" id="valeurPAVue">0</div></div>
+  <div class="card" id="cardPVVue"><div class="card-label">Valeur PV Vue</div><div class="card-value" style="color:#22c55e" id="valeurPVVue">0</div></div>
+  <div class="card"><div class="card-label">⚠️ Alerte</div><div class="card-value" style="color:#f87171" id="stockAlerte">0</div></div>
+</div>
+
+<div class="grid3">
+  <div class="card"><div class="card-label">🏭 DÉPÔT</div><div class="card-value" style="color:#facc15" id="stockDepot">0</div><div class="card-sub" id="stockDepotDetail">-</div><div class="card-sub" id="stockDepotNb" style="font-weight:800;color:#fff"></div></div>
+  <div class="card"><div class="card-label">🏪 SITES</div><div class="card-value" style="color:#22c55e" id="stockSite">0</div><div class="card-sub" id="stockSiteDetail">-</div><div class="card-sub" id="stockSiteNb" style="font-weight:800;color:#fff"></div></div>
+  <div class="card"><div class="card-label">🌍 GLOBAL</div><div class="card-value" id="stockGlobal">0</div><div class="card-sub" id="stockGlobalDetail">-</div><div class="card-sub" id="stockGlobalNb" style="font-weight:800;color:#fff"></div></div>
+</div>
+
+<div class="table-wrap">
+<div style="padding:14px 16px;border-bottom:1px solid #222735"><b>Par Site</b></div>
+<div style="padding:12px 16px;border-bottom:1px solid #222735">
+<input id="searchSite" class="search" placeholder="🔍 Rechercher un site..." oninput="onSearchSite()">
+</div>
+<div class="table-scroll"><table><thead><tr><th>Site</th><th>Nb Articles</th><th>Qté</th><th>PAT</th><th>PVT</th><th>Marge</th><th>Voir</th><th>Actions</th></tr></thead><tbody id="tbodySites"></tbody></table></div>
+</div>
+
+<div class="search-bar">
+<input id="search" class="search-big" placeholder="🔍 Rechercher un produit..." oninput="onSearchInput()">
+<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-top:8px"><span id="searchInfo" style="font-size:12px;color:#6a7085"></span><button onclick="clearSearch()" style="background:transparent;border:1px solid #222735;color:#fff;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700">✖ Effacer</button></div>
+<div id="searchSuggestions" style="display:none"></div>
+</div>
+
+<div class="table-wrap">
+<div style="padding:14px 16px;border-bottom:1px solid #222735;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><b id="titreListeProduits">Liste Produits</b><span id="countListeProduits" style="font-size:12px;color:#facc15;font-weight:800"></span></div>
+<div class="table-scroll"><table><thead><tr id="theadRow"><th>Produit</th><th>Site</th><th>Qté</th><th>PAU</th><th>PAT</th><th>Statut</th><th>Voir</th><th>Suppr</th></tr></thead><tbody id="tbody"></tbody></table></div>
+</div>
+
+<div class="modal-overlay" id="importSiteModal"><div class="modal-box"><div class="modal-head green"><span>📥 Import Site</span><button onclick="closeImportSiteModal()" style="background:transparent;border:0;color:#fff;font-size:20px;cursor:pointer">×</button></div><div class="modal-body"><label class="label-mini">Site</label><select id="importSiteSelect" class="form-control" style="border:2px solid #22c55e;font-size:15px;font-weight:700"></select><div id="importSiteInfo" style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);padding:10px;border-radius:8px;margin-top:10px;font-size:12px"></div></div><div class="modal-foot"><button onclick="closeImportSiteModal()" class="btn btn-dark">Annuler</button><button onclick="confirmImportSite()" class="btn btn-green">📂 Choisir le Fichier</button></div></div></div>
+<div class="modal-overlay" id="exportSiteModal"><div class="modal-box"><div class="modal-head green"><span>⬇️ Export Site</span><button onclick="closeExportSiteModal()" style="background:transparent;border:0;color:#fff;font-size:20px;cursor:pointer">×</button></div><div class="modal-body"><label class="label-mini">Site</label><select id="exportSiteSelect" class="form-control" style="border:2px solid #22c55e;font-size:15px;font-weight:700"></select><div id="exportSiteInfo" style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);padding:10px;border-radius:8px;margin-top:10px;font-size:12px"></div></div><div class="modal-foot"><button onclick="closeExportSiteModal()" class="btn btn-dark">Annuler</button><button onclick="confirmExportSite()" class="btn btn-green">⬇️ Exporter</button></div></div></div>
+<div class="modal-overlay" id="changePassModal"><div class="modal-box"><div class="modal-head blue"><span>🔑 Mot de Passe</span><button onclick="closeChangePassword()" style="background:transparent;border:0;color:#fff;font-size:20px;cursor:pointer">×</button></div><div class="modal-body"><label class="label-mini">Ancien</label><input id="oldPass" type="password" class="input-code blue" placeholder="Ancien"><label class="label-mini">Nouveau</label><input id="newPass" type="password" class="input-code blue" placeholder="Nouveau"><label class="label-mini">Confirme</label><input id="confirmNewPass" type="password" class="input-code blue" placeholder="Confirme"><label style="cursor:pointer;font-size:12px;display:block;margin-top:10px"><input type="checkbox" id="showPassCheck" onchange="toggleShowPass()"> 👁️ Afficher</label><div id="changePassError" style="display:none;color:#f87171;margin-top:8px;font-weight:700"></div><div id="changePassSuccess" style="display:none;color:#22c55e;margin-top:8px;font-weight:700"></div></div><div class="modal-foot"><button onclick="closeChangePassword()" class="btn btn-dark">Annuler</button><button onclick="confirmChangePassword()" class="btn btn-blue">Changer</button></div></div></div>
+<div class="modal-overlay" id="deleteModal"><div class="modal-box"><div class="modal-head danger"><span>Supprimer ?</span><button onclick="closeModal()" style="background:transparent;border:0;color:#fff;font-size:20px;cursor:pointer">×</button></div><div class="modal-body"><h3 id="deleteName" style="color:#f87171;margin:8px 0"></h3><input id="deleteCode" type="password" class="input-code" placeholder="Mot de passe"><div id="codeError" style="display:none;color:#f87171;margin-top:8px">❌ Incorrect</div></div><div class="modal-foot"><button onclick="closeModal()" class="btn btn-dark">Annuler</button><button onclick="confirmDelete()" class="btn" style="background:#dc3545;color:#fff">Supprimer</button></div></div></div>
+<div class="modal-overlay" id="clearDepotModal"><div class="modal-box"><div class="modal-head danger"><span>Vider Dépôt ?</span><button onclick="closeClearDepot()" style="background:transparent;border:0;color:#fff;font-size:20px;cursor:pointer">×</button></div><div class="modal-body"><p style="color:#fff;font-weight:700" id="clearDepotCount">-</p><label class="label-mini">Mot de passe</label><input id="clearDepotPass" type="password" class="input-code" placeholder="Mot de passe"><label class="label-mini">Tape VIDER</label><input id="clearDepotConfirm" class="input-code" placeholder="VIDER"><div id="clearDepotError" style="display:none;color:#f87171;margin-top:8px;font-weight:700"></div></div><div class="modal-foot"><button onclick="closeClearDepot()" class="btn btn-dark">Annuler</button><button onclick="confirmClearDepot()" class="btn" style="background:#dc3545;color:#fff">🗑️ Vider</button></div></div></div>
+<div class="modal-overlay" id="clearSiteModal"><div class="modal-box"><div class="modal-head danger"><span>Vider 1 Site ?</span><button onclick="closeClearSite()" style="background:transparent;border:0;color:#fff;font-size:20px;cursor:pointer">×</button></div><div class="modal-body"><label class="label-mini">Site</label><select id="clearSiteSelect" class="form-control" onchange="updateClearSiteCount()"></select><p style="color:#fff;font-weight:700;margin-top:10px" id="clearSiteCount">-</p><label class="label-mini">Mot de passe</label><input id="clearSitePass" type="password" class="input-code" placeholder="Mot de passe"><label class="label-mini">Tape VIDER</label><input id="clearSiteConfirm" class="input-code" placeholder="VIDER"><div id="clearSiteError" style="display:none;color:#f87171;margin-top:8px;font-weight:700"></div></div><div class="modal-foot"><button onclick="closeClearSite()" class="btn btn-dark">Annuler</button><button onclick="confirmClearSite()" class="btn" style="background:#dc3545;color:#fff">🗑️ Vider</button></div></div></div>
+<div class="modal-overlay" id="clearAllModal"><div class="modal-box"><div class="modal-head danger"><span>Vider Tout ?</span><button onclick="closeClearAll()" style="background:transparent;border:0;color:#fff;font-size:20px;cursor:pointer">×</button></div><div class="modal-body"><p style="color:#fff;font-weight:700" id="clearAllCount">-</p><label class="label-mini">Mot de passe</label><input id="clearAllPass" type="password" class="input-code" placeholder="Mot de passe"><label class="label-mini">Tape TOUT</label><input id="clearAllConfirm" class="input-code" placeholder="TOUT"><div id="clearAllError" style="display:none;color:#f87171;margin-top:8px;font-weight:700"></div></div><div class="modal-foot"><button onclick="closeClearAll()" class="btn btn-dark">Annuler</button><button onclick="confirmClearAll()" class="btn" style="background:#dc3545;color:#fff">🗑️ Vider Tout</button></div></div></div>
+<div class="modal-overlay" id="zeroQtyModal"><div class="modal-box"><div class="modal-head orange"><span>Qté = 0 Tout ?</span><button onclick="closeZeroQty()" style="background:transparent;border:0;color:#fff;font-size:20px;cursor:pointer">×</button></div><div class="modal-body"><p style="color:#fff;font-weight:700" id="zeroQtyCount">-</p><label class="label-mini">Mot de passe</label><input id="zeroQtyPass" type="password" class="input-code orange" placeholder="Mot de passe"><label class="label-mini">Tape ZERO</label><input id="zeroQtyConfirm" class="input-code orange" placeholder="ZERO"><div style="margin-top:12px"><label style="cursor:pointer"><input type="checkbox" id="zeroQtyOnlyDepot"> Uniquement Dépôt ?</label></div><div id="zeroQtyError" style="display:none;color:#f87171;margin-top:8px;font-weight:700"></div></div><div class="modal-foot"><button onclick="closeZeroQty()" class="btn btn-dark">Annuler</button><button onclick="confirmZeroQty()" class="btn btn-orange">0️⃣ Mettre à 0</button></div></div></div>
+<div class="modal-overlay" id="zeroSiteQtyModal"><div class="modal-box"><div class="modal-head purple"><span>Qté = 0 Site ?</span><button onclick="closeZeroSiteQty()" style="background:transparent;border:0;color:#fff;font-size:20px;cursor:pointer">×</button></div><div class="modal-body"><label class="label-mini">Site</label><select id="zeroSiteSelect" class="form-control" onchange="updateZeroSiteCount()"></select><p style="color:#fff;font-weight:700;margin-top:10px" id="zeroSiteCount">-</p><label class="label-mini">Mot de passe</label><input id="zeroSitePass" type="password" class="input-code purple" placeholder="Mot de passe"><label class="label-mini">Tape ZERO</label><input id="zeroSiteConfirm" class="input-code purple" placeholder="ZERO"><div id="zeroSiteError" style="display:none;color:#f87171;margin-top:8px;font-weight:700"></div></div><div class="modal-foot"><button onclick="closeZeroSiteQty()" class="btn btn-dark">Annuler</button><button onclick="confirmZeroSiteQty()" class="btn btn-purple">0️⃣ Mettre à 0</button></div></div></div>
+
+<script src="stock.js"></script>
+<script src="stock-import.js"></script>
+<script>
+function syncSitesVersDepotTout(){
+  try{
+    var sp={}; try{sp=JSON.parse(localStorage.getItem('dub_sites_produits')||'{}')}catch(e){sp={};}
+    var depot1=[]; try{depot1=JSON.parse(localStorage.getItem('dubenzen_produits')||'[]')}catch(e){}
+    var depot2=[]; try{depot2=JSON.parse(localStorage.getItem('dub_produits')||'[]')}catch(e){}
+    var depot = depot1.length>=depot2.length ? depot1 : depot2;
+    var keyDepot = depot1.length>=depot2.length ? 'dubenzen_produits' : 'dub_produits';
+    if(typeof allProd!=='undefined' && Array.isArray(allProd) && allProd.length>depot.length){ depot=allProd; }
+    var vu={};
+    depot.forEach(function(p){ vu[String(p.nom||'').trim().toUpperCase()+'|'+String(p.fournisseur||'').trim().toUpperCase()+'|'+String(p.lot||'').trim().toUpperCase()]=true; });
+    var ajoutes=0, deja=0;
+    for(var sid in sp){
+      (sp[sid]||[]).forEach(function(p){
+        var nom=String(p.nom||'').trim(); if(!nom) return;
+        var cle=nom.toUpperCase()+'|'+String(p.fournisseur||'').trim().toUpperCase()+'|'+String(p.lot||'').trim().toUpperCase();
+        if(vu[cle]){ deja++; return; }
+        vu[cle]=true;
+        var copie={}; for(var k in p){ copie[k]=p[k]; }
+        copie.id = p.originalId || p.id || (Date.now().toString()+Math.random().toString().slice(2,6));
+        copie.nom = nom;
+        copie.site = 'Dépôt';
+        copie.site_nom = 'Dépôt Central';
+        copie.stock = 0; copie.stock_depot = 0; copie.quantite = 0; copie.qte = 0; copie.stock_site = 0;
+        depot.push(copie); ajoutes++;
+      });
+    }
+    localStorage.setItem(keyDepot, JSON.stringify(depot));
+    localStorage.setItem('dubenzen_produits', JSON.stringify(depot));
+    localStorage.setItem('dub_produits', JSON.stringify(depot));
+    if(typeof allProd!=='undefined'){ allProd=depot; if(typeof saveData==='function') saveData(); }
+    alert('✅ '+ajoutes+' créés au Dépôt');
+    if(typeof load==='function') load(); else location.reload();
+  }catch(e){ alert('❌ '+e.message); }
+}
+</script>
+</body>
+</html>

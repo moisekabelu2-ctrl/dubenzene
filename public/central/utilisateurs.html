@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Utilisateurs - V3 REPAIR LOGIN</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0f1115;color:#fff;font-family:Inter,sans-serif;padding:16px}
+.h1{font-size:22px;font-weight:900}.sub{font-size:11px;color:#8a8fa8;margin-top:4px}
+.top-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}@media(max-width:900px){.top-stats{grid-template-columns:repeat(2,1fr)}}
+.stat-card{background:#171a23;border:1px solid #222735;border-radius:14px;padding:12px}.stat-card .k{font-size:10px;color:#6a7085;text-transform:uppercase}.stat-card .v{font-size:22px;font-weight:900;margin-top:4px}.stat-card .s{font-size:10px;margin-top:2px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0;align-items:center}.search{flex:1;min-width:220px;background:#171a23;border:1px solid #222735;border-radius:12px;padding:11px 14px;color:#fff;outline:none}.select{background:#171a23;border:1px solid #222735;border-radius:12px;padding:11px 12px;color:#fff}.btn{padding:11px 18px;border-radius:12px;border:0;font-weight:800;cursor:pointer}.btn-green{background:#22c55e;color:#000}.btn-yellow{background:#facc15;color:#000}.btn-dark{background:#171a23;border:1px solid #222735;color:#fff}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}@media(max-width:1100px){.grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:600px){.grid{grid-template-columns:1fr}}
+.u-card{background:#171a23;border:1px solid #222735;border-radius:16px;padding:14px;position:relative;overflow:hidden}.u-card.admin{border-top:2px solid #c9a86a}.u-card.appro{border-top:2px solid #60a5fa}.u-card.manager{border-top:2px solid #d4b896}.u-card.vendeur{border-top:2px solid #22c55e}
+.avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:15px}.a-admin{background:rgba(201,168,106,.2);color:#c9a86a}.a-appro{background:rgba(96,165,250,.2);color:#60a5fa}.a-manager{background:rgba(212,184,150,.2);color:#d4b896}.a-vendeur{background:#22c55e;color:#000}
+.badge{position:absolute;top:12px;right:12px;padding:4px 10px;border-radius:999px;font-size:9px;font-weight:900;border:1px solid}.b-admin{background:rgba(201,168,106,.15);color:#c9a86a;border-color:rgba(201,168,106,.25)}.b-appro{background:rgba(96,165,250,.15);color:#60a5fa;border-color:rgba(96,165,250,.25)}.b-manager{background:rgba(212,184,150,.15);color:#d4b896;border-color:rgba(212,184,150,.25)}.b-vendeur{background:rgba(34,197,94,.15);color:#22c55e;border-color:rgba(34,197,94,.25)}
+.meta{margin-top:10px;display:grid;gap:6px;font-size:11px;color:#8a8fa8}.perm{margin-top:10px;font-size:10px;padding:6px 8px;border-radius:8px;background:#0f1115;border:1px solid #1f2438;color:#6a7085}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:999;align-items:center;justify-content:center;padding:20px}.modal-overlay.show{display:flex}.modal-box{background:#171a23;border:1px solid #222735;border-radius:16px;max-width:480px;width:100%}.modal-head{padding:16px;font-weight:900;display:flex;justify-content:space-between;border-bottom:1px solid #222735;background:#0f1115;border-radius:16px 16px 0 0}.modal-body{padding:16px;display:grid;gap:12px}.input{width:100%;background:#0f1115;border:1px solid #222735;border-radius:12px;padding:11px 12px;color:#fff;outline:none}
+.alert{padding:10px;border-radius:10px;font-size:11px;margin-bottom:12px;border:1px solid}.alert-ok{background:rgba(34,197,94,.1);color:#22c55e;border-color:rgba(34,197,94,.2)}.alert-warn{background:rgba(250,204,21,.1);color:#facc15;border-color:rgba(250,204,21,.2)}
+</style>
+</head>
+<body>
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div><h1 class="h1">User Management V3</h1><p class="sub">Répare les anciens users + LOGIN pour tous</p></div>
+<div style="display:flex;gap:6px"><div id="whoami2" style="font-size:10px;color:#6a7085"></div><button onclick="location.href='login.html'" class="btn btn-dark" style="padding:6px 12px;font-size:10px">↗ Login</button><button onclick="logout()" class="btn btn-dark" style="padding:6px 12px;font-size:10px">Logout</button></div>
+</div>
+
+<div id="repairBanner" style="display:none"></div>
+
+<div class="top-stats">
+<div class="stat-card"><div class="k">Total Users</div><div class="v" id="stTotal">0</div><div class="s" style="color:#22c55e">Actifs</div></div>
+<div class="stat-card"><div class="k">Managers</div><div class="v" id="stMan">0</div><div class="s" style="color:#c9a86a">Gérants</div></div>
+<div class="stat-card"><div class="k">Vendeurs</div><div class="v" id="stVend">0</div><div class="s" style="color:#22c55e">Vente</div></div>
+<div class="stat-card"><div class="k">Admins</div><div class="v" id="stAdm">0</div><div class="s" style="color:#c9a86a">Full</div></div>
+</div>
+
+<div class="bar">
+<input id="search" class="search" placeholder="🔍 Search..." oninput="render()">
+<select id="filterRole" class="select" onchange="render()"><option value="">All Roles</option><option value="admin">ADMIN</option><option value="appro">APPRO</option><option value="manager">MANAGER</option><option value="vendeur">VENDEUR</option></select>
+<select id="filterSite" class="select" onchange="render()"><option value="">Tous sites</option></select>
+<button onclick="openCreate()" class="btn btn-green">+ Add User</button>
+<button onclick="repairAll()" class="btn btn-yellow">🔧 Réparer Tous</button>
+</div>
+
+<div id="grid" class="grid"></div>
+
+<!-- CREATE MODAL -->
+<div class="modal-overlay" id="createModal"><div class="modal-box"><div class="modal-head"><span id="modalTitle">Create User</span><button onclick="closeCreate()" style="background:0;border:0;color:#fff;font-size:22px">×</button></div><div class="modal-body">
+<input type="hidden" id="editId">
+<div><label style="font-size:10px;color:#c9a86a">Full Name *</label><input id="u_nom" class="input" placeholder="Thomas"></div>
+<div><label style="font-size:10px;color:#c9a86a">Login * (nom sans espace)</label><input id="u_login" class="input" placeholder="thomas"></div>
+<div><label style="font-size:10px;color:#6a7085">Téléphone</label><input id="u_phone" class="input" placeholder="082..."></div>
+<div><label style="font-size:10px;color:#c9a86a">PIN *</label><input id="u_pin" class="input" placeholder="1234"></div>
+<div><label style="font-size:10px;color:#c9a86a">Role *</label><select id="u_role" class="input" onchange="onRoleChange()"><option value="">Select role</option><option value="admin">👑 ADMIN</option><option value="appro">📦 APPRO</option><option value="manager">🏢 MANAGER</option><option value="vendeur">🛒 VENDEUR</option></select></div>
+<div id="siteWrap" style="display:none"><label style="font-size:10px;color:#c9a86a">Pharmacy Location *</label><select id="u_site" class="input"></select></div>
+<p id="permInfo" style="font-size:10px;color:#8a8fa8;background:#0f1115;padding:10px;border-radius:10px;border:1px solid #1f2438"></p>
+<div style="display:flex;gap:8px"><button onclick="closeCreate()" class="btn btn-dark" style="flex:1">Cancel</button><button onclick="saveUser()" class="btn btn-green" style="flex:2" id="btnSave">+ Create</button></div>
+<p id="msg" style="font-size:11px;text-align:center;font-weight:800"></p>
+</div></div></div>
+
+<script>
+const KEY_USERS='dub_users';const KEY_SITES='dub_sites';const KEY_CURRENT='dub_current_user_id';
+function getUsers(){try{return JSON.parse(localStorage.getItem(KEY_USERS)||'[]')}catch(e){return []}}
+function getSites(){try{return JSON.parse(localStorage.getItem(KEY_SITES)||'[]')}catch(e){return []}}
+function saveUsers(l){localStorage.setItem(KEY_USERS,JSON.stringify(l))}
+function getCurrentUser(){let id=localStorage.getItem(KEY_CURRENT);if(!id)return null;return getUsers().find(u=>String(u.id)===String(id))||null}
+function initials(n){return n.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase()}
+
+// AUTO REPAIR AU CHARGEMENT - POUR TES ANCIENS USERS
+(function autoRepair(){
+ let users=getUsers(); let changed=false;
+ users=users.map(u=>{
+   if(!u.username || !u.pin){
+     changed=true;
+     return {
+       ...u,
+       username: (u.username || u.nom.toLowerCase().replace(/\s+/g,'').replace(/[^a-z0-9]/g,'')).trim(),
+       login: (u.login || u.username || u.nom.toLowerCase().replace(/\s+/g,'')).trim(),
+       pin: u.pin || '1234'
+     }
+   }
+   if(!u.login){ changed=true; return {...u, login: u.username} }
+   return u;
+ });
+ if(changed){ saveUsers(users); console.log('Auto-repair fait', users); }
+})();
+
+function loadSites(){let sites=getSites();let s1=document.getElementById('u_site');let s2=document.getElementById('filterSite');let opts=sites.map(x=>`<option value="${x.id}">${x.nom}</option>`).join('');s1.innerHTML=opts||'<option value="">Aucun site</option>';s2.innerHTML='<option value="">Tous sites</option>'+opts;}
+function onRoleChange(){let r=document.getElementById('u_role').value;let w=document.getElementById('siteWrap');let p=document.getElementById('permInfo');if(r==='manager'||r==='vendeur'){w.style.display='block';}else{w.style.display='none';}if(r==='admin')p.textContent='👑 ADMIN: Full access';else if(r==='appro')p.textContent='📦 APPRO: Réappro';else if(r==='manager')p.textContent='🏢 MANAGER: Son site + crée vendeurs';else if(r==='vendeur')p.textContent='🛒 VENDEUR: Stock site + VENDRE';else p.textContent='';}
+function render(){
+ let cur=getCurrentUser();
+ document.getElementById('whoami2').innerHTML=cur?`<b style="color:#fff">${cur.nom}</b> ${cur.role.toUpperCase()}`:'Non connecté';
+ let users=getUsers();
+ // Banner réparation
+ let withoutLogin=users.filter(u=>!u.username || !u.pin);
+ let banner=document.getElementById('repairBanner');
+ if(withoutLogin.length>0){
+   banner.style.display='block';
+   banner.innerHTML=`<div class="alert alert-warn">⚠️ ${withoutLogin.length} users sans login/PIN détectés. Clique <b>🔧 Réparer Tous</b> pour leur donner login = nom minuscule + PIN 1234</div>`;
+ } else {
+   banner.style.display='none';
+   banner.innerHTML=`<div class="alert alert-ok">✅ Tous les users ont un login + PIN - Connexion possible dans login.html</div>`;
+   banner.style.display='block';
+ }
+ document.getElementById('stTotal').textContent=users.length;
+ document.getElementById('stMan').textContent=users.filter(u=>u.role==='manager').length;
+ document.getElementById('stVend').textContent=users.filter(u=>u.role==='vendeur').length;
+ document.getElementById('stAdm').textContent=users.filter(u=>u.role==='admin').length;
+ if(cur && (cur.role==='manager'||cur.role==='vendeur')) users=users.filter(u=>String(u.siteId)===String(cur.siteId));
+ let q=document.getElementById('search').value.toLowerCase().trim();
+ let rf=document.getElementById('filterRole').value;
+ let sf=document.getElementById('filterSite').value;
+ if(q) users=users.filter(u=>`${u.nom} ${u.username||''} ${u.login||''} ${u.phone} ${u.role} ${u.siteName}`.toLowerCase().includes(q));
+ if(rf) users=users.filter(u=>u.role===rf);
+ if(sf) users=users.filter(u=>String(u.siteId)===String(sf));
+ document.getElementById('grid').innerHTML=users.map(u=>{
+  let siteName=u.siteName||'Dépôt Central';
+  let login=u.login || u.username || u.nom.toLowerCase().replace(/\s+/g,'');
+  let hasLogin=u.pin?`✅ login:${login} PIN:${u.pin}`:`❌ SANS LOGIN`;
+  return `<div class="u-card ${u.role}"><span class="badge b-${u.role}">${u.role.toUpperCase()}</span>
+   <div style="display:flex;gap:10px;align-items:center;margin-top:6px"><div class="avatar a-${u.role}">${initials(u.nom)}</div><div><div style="font-weight:900;font-size:14px">${u.nom}</div><div style="font-size:10px;color:${u.pin?'#22c55e':'#f87171'}">${hasLogin}</div></div></div>
+   <div class="meta"><div>📧 ${u.phone||'-'}</div><div>📍 ${siteName}</div></div>
+   <div class="perm" style="${!u.pin?'border-color:#f87171;color:#f87171':''}">${u.role} - ${login}</div>
+   <div style="margin-top:10px;display:flex;gap:6px"><button onclick="editUser('${u.id}')" class="btn btn-yellow" style="flex:1;font-size:11px;padding:8px">✏️ Edit Login</button><button onclick="loginAs('${u.id}')" class="btn btn-dark" style="flex:1;font-size:11px;padding:8px">Login</button><button onclick="delUser('${u.id}')" style="background:0;border:1px solid #222735;color:#f87171;padding:8px 10px;border-radius:10px;font-size:11px">×</button></div></div>`;
+ }).join('')||`<div style="grid-column:1/-1;text-align:center;padding:40px;color:#6a7085">Aucun user - Premier = ADMIN</div>`;
+}
+function openCreate(){document.getElementById('editId').value='';document.getElementById('modalTitle').textContent='Create New User';document.getElementById('btnSave').textContent='+ Create User';document.getElementById('createModal').classList.add('show');loadSites();document.getElementById('u_nom').value='';document.getElementById('u_login').value='';document.getElementById('u_phone').value='';document.getElementById('u_pin').value='';}
+function closeCreate(){document.getElementById('createModal').classList.remove('show')}
+function editUser(id){
+ let u=getUsers().find(x=>String(x.id)===String(id)); if(!u)return;
+ document.getElementById('editId').value=u.id;
+ document.getElementById('modalTitle').textContent='Edit Login - '+u.nom;
+ document.getElementById('btnSave').textContent='💾 Sauver Login';
+ document.getElementById('u_nom').value=u.nom;
+ document.getElementById('u_login').value=u.login||u.username||u.nom.toLowerCase().replace(/\s+/g,'');
+ document.getElementById('u_phone').value=u.phone||'';
+ document.getElementById('u_pin').value=u.pin||'';
+ document.getElementById('u_role').value=u.role;
+ loadSites();
+ if(u.siteId) document.getElementById('u_site').value=u.siteId;
+ onRoleChange();
+ document.getElementById('createModal').classList.add('show');
+}
+function saveUser(){
+ let editId=document.getElementById('editId').value;
+ let nom=document.getElementById('u_nom').value.trim();
+ let login=document.getElementById('u_login').value.trim().toLowerCase().replace(/\s+/g,'');
+ let phone=document.getElementById('u_phone').value.trim();
+ let pin=document.getElementById('u_pin').value.trim();
+ let role=document.getElementById('u_role').value;
+ let siteId=document.getElementById('u_site').value;
+ let msg=document.getElementById('msg');
+ if(!nom||!login||!pin||!role){msg.textContent='❌ Remplis nom, login, PIN, rôle';msg.style.color='#f87171';return}
+ let users=getUsers();
+ let cur=getCurrentUser();
+ if(editId){
+   let idx=users.findIndex(x=>String(x.id)===String(editId));
+   if(idx>=0){
+     let siteName=users[idx].siteName;
+     if(role==='manager'||role==='vendeur'){let s=getSites().find(x=>String(x.id)===String(siteId));siteName=s?s.nom:'';}
+     users[idx]={...users[idx], nom, login, username: login, phone, pin, role, siteId: siteId||'', siteName};
+     saveUsers(users);msg.textContent='✅ Login mis à jour';msg.style.color='#22c55e';setTimeout(()=>{closeCreate();render();},600);return;
+   }
+ }
+ if(users.find(u=>(u.login||u.username||'').toLowerCase()===login.toLowerCase())){msg.textContent='❌ Login existe déjà';msg.style.color='#f87171';return}
+ if(users.length===0) role='admin';
+ let siteName='';
+ if(role==='manager'||role==='vendeur'){
+   if(!siteId){msg.textContent='❌ Site obligatoire';msg.style.color='#f87171';return}
+   let s=getSites().find(x=>String(x.id)===String(siteId));siteName=s?s.nom:'';
+ }
+ let obj={id:Date.now().toString(),nom,login,username:login,phone,pin,role,siteId:siteId||'',siteName,createdAt:new Date().toISOString(),createdBy:cur?cur.id:'system'};
+ users.unshift(obj);saveUsers(users);
+ if(users.length===1){localStorage.setItem(KEY_CURRENT,obj.id);localStorage.setItem('isLogged','true');localStorage.setItem('user',JSON.stringify(obj));}
+ msg.textContent='✅ '+nom+' créé - login:'+login;msg.style.color='#22c55e';
+ setTimeout(()=>{closeCreate();render();},700);
+}
+function loginAs(id){let u=getUsers().find(x=>String(x.id)===String(id));if(!u)return;localStorage.setItem(KEY_CURRENT,u.id);localStorage.setItem('isLogged','true');localStorage.setItem('user',JSON.stringify(u));render();}
+function logout(){localStorage.removeItem(KEY_CURRENT);localStorage.removeItem('isLogged');localStorage.removeItem('user');render();}
+function delUser(id){let target=getUsers().find(u=>String(u.id)===String(id));if(!target)return;if(target.role==='admin'&&getUsers().filter(u=>u.role==='admin').length===1){alert('❌ Dernier ADMIN');return}if(!confirm('Supprimer '+target.nom+' ?'))return;let users=getUsers().filter(u=>String(u.id)!==String(id));saveUsers(users);render();}
+function repairAll(){
+ let users=getUsers();
+ let fixed=0;
+ users=users.map(u=>{
+   let need=false; let nu={...u};
+   if(!nu.login && !nu.username){nu.login=nu.nom.toLowerCase().replace(/\s+/g,'').replace(/[^a-z0-9]/g,'');nu.username=nu.login;need=true;}
+   if(!nu.login && nu.username){nu.login=nu.username;need=true;}
+   if(!nu.username && nu.login){nu.username=nu.login;need=true;}
+   if(!nu.pin){nu.pin='1234';need=true;}
+   if(need)fixed++;
+   return nu;
+ });
+ saveUsers(users);
+ alert(`✅ ${fixed} utilisateurs réparés\nMaintenant tous ont login + PIN 1234\nVa dans login.html pour te connecter`);
+ render();
+}
+loadSites();render();
+
+// Auto-remplir login quand on tape nom
+document.getElementById('u_nom').addEventListener('input', e=>{
+ if(document.getElementById('editId').value) return;
+ let v=e.target.value.toLowerCase().replace(/\s+/g,'').replace(/[^a-z0-9]/g,'');
+ document.getElementById('u_login').value=v;
+});
+</script>
+</body>
+</html>

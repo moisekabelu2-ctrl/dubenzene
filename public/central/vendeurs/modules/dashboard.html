@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DUBENZENE - Dashboard</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;800&family=Space+Grotesk:wght@700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#05070a;color:white;font-family:'Plus Jakarta Sans',sans-serif;padding:14px;padding-bottom:90px}
+.card{background:linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02));border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:16px}
+.kpi{background:linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02));border:1px solid rgba(255,255,255,0.1);border-radius:18px;padding:16px}
+.pill{padding:6px 12px;border-radius:100px;font-size:10px;font-weight:800;border:1px solid rgba(255,255,255,0.12)}
+.dot{width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block;animation:pulse 1.5s infinite}
+@keyframes pulse{0%{opacity:1}50%{opacity:.3}100%{opacity:1}}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
+.gridPerf{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+@media(max-width:800px){.grid4{grid-template-columns:1fr 1fr}.gridPerf{grid-template-columns:1fr}}
+.btn-vente{background:#22c55e;color:#000;border:none;padding:14px 18px;border-radius:12px;font-weight:900;cursor:pointer;width:100%;margin-top:12px}
+.btn-caisse{background:#fff;color:#000;border:none;padding:12px 18px;border-radius:12px;font-weight:900;cursor:pointer;width:100%;margin-top:8px}
+.chart-photo{background:#fff;border-radius:18px;padding:18px 16px 12px;color:#111;margin-top:14px}
+.bars-photo{display:flex;align-items:end;gap:14px;height:220px;margin-top:18px;padding:0 4px}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;height:100%;justify-content:end}
+.bar-val{font-size:11px;font-weight:800;color:#111;white-space:nowrap}
+.bar-box{width:100%;background:linear-gradient(180deg,#166534,#0f5132);border-radius:6px 6px 0 0;min-height:6px;position:relative;cursor:pointer}
+.bar-box.today{background:linear-gradient(180deg,#22c55e,#15803d)}
+.bar-day{font-size:12px;color:#475569;font-weight:600}
+.bar-day.today{color:#111;font-weight:800}
+.tooltip{position:absolute;top:-32px;left:50%;transform:translateX(-50%);background:#111;color:#fff;font-size:10px;padding:5px 8px;border-radius:8px;white-space:nowrap;display:none}
+.bar-col:hover .tooltip{display:block}
+.pie-wrap{display:flex;gap:14px;align-items:center}
+.pie-svg{width:130px;height:130px;flex-shrink:0;transform:rotate(-90deg)}
+.pie-legend{flex:1;display:flex;flex-direction:column;gap:8px}
+.pie-item{display:flex;align-items:center;gap:8px;font-size:12px}
+.pie-color{width:12px;height:12px;border-radius:4px;flex-shrink:0}
+</style>
+</head>
+<body>
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+<div style="display:flex;gap:12px;align-items:center"><div style="width:44px;height:44px;border-radius:12px;background:radial-gradient(at 30% 20%,#facc15,#eab308);display:flex;align-items:center;justify-content:center">💎</div><div><h1 style="font-family:'Space Grotesk';font-size:18px">DUBENZENE <span style="color:#22c55e" id="siteName">VICTOIRE</span> • DASHBOARD</h1><div style="font-size:9px;letter-spacing:2px;color:#64748b" id="userLabel">VENDEUR</div></div></div>
+<div style="display:flex;gap:8px;align-items:center">
+<div class="pill" id="pillTauxComptoir" style="background:#f59e0b;color:#000;border:none"><span>💱 TAUX COMPTOIR: </span><span id="tauxH">Non fixé</span></div>
+<div class="pill" style="color:#94a3b8" id="heure"></div>
+</div>
+</div>
+
+<div class="grid4">
+<div class="kpi"><div style="font-size:9px;letter-spacing:1px;color:#64748b">CA DU JOUR</div><div id="caJour" style="font-family:'Space Grotesk';font-size:22px;font-weight:800;margin-top:6px">0,00 FC</div><div id="caJourUSD" style="font-size:12px;color:#22c55e;font-weight:800;margin-top:2px">≈ 0,00 $</div><div id="caEvol" style="font-size:11px;color:#22c55e;margin-top:4px">—</div></div>
+<div class="kpi"><div style="font-size:9px;letter-spacing:1px;color:#64748b">VENTES</div><div id="nbVentes" style="font-family:'Space Grotesk';font-size:22px;font-weight:800;margin-top:6px">0</div><div id="nbClients" style="font-size:11px;color:#94a3b8;margin-top:4px">0 articles</div></div>
+<div class="kpi"><div style="font-size:9px;letter-spacing:1px;color:#64748b">TAUX COMPTOIR DU JOUR</div><div id="tauxJour" style="font-family:'Space Grotesk';font-size:22px;font-weight:800;margin-top:6px">Non fixé</div><div style="font-size:11px;color:#64748b;margin-top:4px">1$ = <span id="tauxDetail">-</span> FC</div></div>
+<div class="kpi"><div style="font-size:9px;letter-spacing:1px;color:#64748b">PANIER MOYEN</div><div id="panierMoy" style="font-family:'Space Grotesk';font-size:22px;font-weight:800;margin-top:6px">0,00 FC</div><div id="artMoy" style="font-size:11px;color:#22c55e;margin-top:4px">0 art/vente</div></div>
+</div>
+
+<div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,rgba(250,204,21,0.12),rgba(34,197,94,0.08));border-color:rgba(250,204,21,0.25)">
+<div style="display:flex;justify-content:space-between;align-items:center"><h3 style="font-family:'Space Grotesk';font-size:13px">💰 MA CAISSE</h3><span id="statutRapport" style="font-size:10px;padding:4px 10px;border-radius:100px;background:rgba(255,255,255,0.1);font-weight:800">PAS ENVOYÉ</span></div>
+<div style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap">
+<div style="flex:1;min-width:70px"><div style="font-size:9px;color:#94a3b8">OUVERTURE</div><b id="caOuverture" style="font-size:15px">0 FC</b></div>
+<div style="flex:1;min-width:70px"><div style="font-size:9px;color:#94a3b8">DÉPENSES</div><b id="caDepenses" style="font-size:15px;color:#f87171">0 FC</b></div>
+<div style="flex:1;min-width:70px"><div style="font-size:9px;color:#94a3b8">THÉORIQUE</div><b id="caTheorique" style="font-size:15px;color:#22c55e">0 FC</b></div>
+<div style="flex:1;min-width:70px"><div style="font-size:9px;color:#94a3b8">EN MAIN</div><b id="caEnMain" style="font-size:15px;color:#facc15">—</b></div>
+</div>
+<div id="caDetail" style="font-size:11px;color:#94a3b8;margin-top:8px"></div>
+<button class="btn-caisse" onclick="window.location.href='caisse.html'">🔒 VOIR MA CAISSE →</button>
+</div>
+
+<div class="gridPerf">
+<div class="card" style="background:linear-gradient(135deg,rgba(59,130,246,0.12),rgba(6,182,212,0.08));border-color:rgba(59,130,246,0.25)">
+<div style="font-size:9px;letter-spacing:1px;color:#60a5fa">PERF • <span id="perfSite">VICTOIRE</span></div>
+<div style="display:flex;gap:8px;align-items:baseline;margin-top:8px"><span id="rankSite" style="font-family:'Space Grotesk';font-size:36px;font-weight:800">#1</span><span id="rankSiteTotal" style="color:#64748b;font-size:12px">/1</span><span style="margin-left:auto;padding:4px 10px;border-radius:100px;background:rgba(59,130,246,0.2);color:#60a5fa;font-size:10px;font-weight:800" id="badgeSite">👑 LEADER</span></div>
+<div style="height:6px;background:rgba(255,255,255,0.08);border-radius:10px;margin-top:10px"><div id="barSite" style="width:100%;height:100%;background:linear-gradient(90deg,#3b82f6,#06b6d4);border-radius:10px"></div></div>
+<div id="detailSite" style="font-size:10px;color:#64748b;margin-top:6px">—</div>
+</div>
+<div class="card" style="background:linear-gradient(135deg,rgba(34,197,94,0.12),rgba(22,163,74,0.08));border-color:rgba(34,197,94,0.25)">
+<div style="font-size:9px;letter-spacing:1px;color:#22c55e">PERF • SYSTÈME</div>
+<div style="display:flex;gap:8px;align-items:baseline;margin-top:8px"><span id="rankGlobal" style="font-family:'Space Grotesk';font-size:36px;font-weight:800">#1</span><span id="rankGlobalTotal" style="color:#64748b;font-size:12px">/1</span><span style="margin-left:auto;padding:4px 10px;border-radius:100px;background:rgba(34,197,94,0.2);color:#22c55e;font-size:10px;font-weight:800" id="badgeGlobal">🏆 TOP</span></div>
+<div style="height:6px;background:rgba(255,255,255,0.08);border-radius:10px;margin-top:10px"><div id="barGlobal" style="width:100%;height:100%;background:linear-gradient(90deg,#22c55e,#16a34a);border-radius:10px"></div></div>
+<div id="detailGlobal" style="font-size:10px;color:#64748b;margin-top:6px">—</div>
+</div>
+</div>
+
+<div class="chart-photo">
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <div>
+      <h3 style="color:#111;font-size:15px">Revenus de la semaine</h3>
+      <p style="color:#64748b;font-size:11px">Chiffre d'affaires en FC</p>
+    </div>
+    <span id="total7j" style="font-size:12px;color:#64748b;font-weight:700">0 FC</span>
+  </div>
+  <div id="barsPhoto" class="bars-photo"></div>
+  <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
+    <span style="padding:6px 12px;background:#dcfce7;border-radius:100px;color:#166534;font-size:11px">Moy: <b id="moy7j">0 FC</b>/j</span>
+    <span style="padding:6px 12px;background:#fef9c3;border-radius:100px;color:#854d0e;font-size:11px">Meilleur: <b id="best7j">0 FC</b></span>
+    <span style="padding:6px 12px;background:#f1f5f9;border-radius:100px;color:#475569;font-size:11px"><b id="ventesAuj">0</b> ventes auj.</span>
+  </div>
+</div>
+
+<div class="card" style="margin-top:14px">
+<div style="display:flex;justify-content:space-between;align-items:center">
+<h3 style="font-family:'Space Grotesk';font-size:13px">🥧 Top produits du jour</h3>
+<span id="pieTotal" style="font-size:11px;color:#64748b">0 FC</span>
+</div>
+<div style="margin-top:14px" class="pie-wrap">
+  <div style="position:relative">
+    <svg id="pieSvg" class="pie-svg" viewBox="0 0 120 120"></svg>
+    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center">
+      <div style="font-size:9px;color:#94a3b8">TOTAL</div>
+      <div id="pieCenter" style="font-size:13px;font-weight:800">0 FC</div>
+    </div>
+  </div>
+  <div id="pieLegend" class="pie-legend"></div>
+</div>
+<div id="topProd" style="margin-top:12px"></div>
+</div>
+
+<div class="card" style="margin-top:14px">
+<h3 style="font-family:'Space Grotesk';font-size:12px;margin-bottom:10px">Dernières ventes</h3>
+<div id="lastVentes"></div>
+</div>
+
+<button class="btn-vente" onclick="window.location.href='vente.html'">🛒 ALLER A LA VENTE →</button>
+
+<script>
+function fmtFC(n){ return Number(n||0).toLocaleString('fr-FR',{minimumFractionDigits:2}) + ' FC'; }
+function fmtK(n){ if(n>=1000) return Math.round(n/1000)+'k'; return Math.round(n).toString(); }
+function getMe(){
+  try{
+    let u = JSON.parse(localStorage.getItem('user')||'{}');
+    let uid = localStorage.getItem('dub_current_user_id')||u.id||u.userId||'';
+    let site = u.siteId||u.siteName||'victoire';
+    if(!u.siteId){
+      let users = JSON.parse(localStorage.getItem('dub_users')||'[]');
+      let me = users.find(x=>String(x.id)===String(uid));
+      if(me) site = me.siteId||me.siteName||site;
+    }
+    return {id:String(uid||''), site:site, nom:u.nom||u.name||u.username||'VENDEUR'};
+  }catch(e){ return {id:'',site:'victoire',nom:'VENDEUR'} }
+}
+function getVentes(){ try{ return JSON.parse(localStorage.getItem('dub_ventes')||'[]'); }catch(e){ return []; } }
+
+// ✅ AJOUT - LE DASHBOARD VENDEUR VOIT LE TAUX DU PANIER
+function getTauxPanier(site){
+  let s = String(site||'victoire').toLowerCase();
+  let t = 0;
+  try{
+    // 1. Taux du Panier - clés directes du panier
+    let clesPanier = ['dub_panier_taux','dub_panier_taux_comptoir','dub_taux_panier','panier_taux','dub_cart_taux'];
+    for(let k of clesPanier){ t = Number(localStorage.getItem(k)||'0'); if(t>0) break; }
+    // 2. Taux stocké DANS le panier (objet / tableau)
+    if(!t){
+      for(let k of Object.keys(localStorage)){
+        if(k.toLowerCase().indexOf('panier')!==-1 || k.toLowerCase().indexOf('cart')!==-1){
+          try{
+            let v = JSON.parse(localStorage.getItem(k)||'null');
+            if(v && typeof v==='object'){
+              if(v.tauxComptoir) t = Number(v.tauxComptoir);
+              if(!t && v.taux) t = Number(v.taux);
+              if(!t && Array.isArray(v)){
+                for(let it of v){ if(it && (it.tauxComptoir||it.taux)){ t = Number(it.tauxComptoir||it.taux); if(t) break; } }
+              }
+            }
+          }catch(e){}
+          if(t) break;
+        }
+      }
+    }
+    // 3. Taux comptoir du site - même clé que Panier / Vente
+    if(!t) t = Number(localStorage.getItem('dub_taux_comptoir_'+s)||'0');
+    // 4. N'importe quel taux comptoir (si le nom du site est différent)
+    if(!t){
+      for(let k of Object.keys(localStorage)){
+        if(k.indexOf('dub_taux_comptoir_')===0){ t = Number(localStorage.getItem(k)||'0'); if(t>0) break; }
+      }
+    }
+    // 5. Anciennes clés
+    if(!t){
+      let m = {}; try{ m = JSON.parse(localStorage.getItem('dub_taux_map')||'{}'); }catch(e){}
+      if(m[s]) t = Number(m[s]);
+      if(!t) for(let k in m){ t = Number(m[k]); if(t>0) break; }
+    }
+    if(!t) t = Number(localStorage.getItem('dub_taux')||localStorage.getItem('BENZENE_TAUX')||'0');
+    // 6. Dernier recours : taux de la dernière vente
+    if(!t){
+      let ventes = getVentes();
+      for(let i=ventes.length-1;i>=0;i--){ let v = Number(ventes[i].tauxComptoir||ventes[i].taux||0); if(v>0){ t=v; break; } }
+    }
+  }catch(e){ t=0; }
+  return t;
+}
+
+function estValidee(v){
+  let s = String(v.statut||v.status||v.etat||v.validation||'').toLowerCase().trim();
+  if(!s) return true;
+  if(['valide','validé','validee','validated','confirmé','confirme','confirmed','payé','paye','paid','terminé','termine','done','livré','livre','accepté','accepte','clôturé','cloture'].includes(s)) return true;
+  if(['brouillon','draft','en attente','attente','pending','en cours','annulé','annule','cancelled','canceled','refusé','refuse','rejected','supprimé','supprime','deleted','retour','retourné'].includes(s)) return false;
+  if(v.valide===true || v.validated===true || v.isValidated===true) return true;
+  if(v.valide===false || v.validated===false) return false;
+  return true;
+}
+function estEnAttente(v){
+  let s = String(v.statut||v.status||v.etat||'').toLowerCase();
+  return ['brouillon','draft','en attente','attente','pending','en cours'].includes(s);
+}
+function getMontantVente(v){
+  if(v.valeurPV!=null) return Number(v.valeurPV);
+  if(v.total!=null) return Number(v.total);
+  if(v.montant!=null) return Number(v.montant);
+  if(v.valeur!=null) return Number(v.valeur);
+  if(v.pv!=null && v.qte!=null) return Number(v.pv)*Number(v.qte);
+  if(v.pv!=null && v.qty!=null) return Number(v.pv)*Number(v.qty);
+  return 0;
+}
+function getQteVente(v){
+  if(v.qte!=null) return Number(v.qte);
+  if(v.qty!=null) return Number(v.qty);
+  if(v.quantite!=null) return Number(v.quantite);
+  return 1;
+}
+function getDateVente(v){
+  let d = v.date || v.createdAt || v.heure || '';
+  if(typeof d==='number') d = new Date(d).toISOString();
+  return String(d);
+}
+function getSiteVente(v){ return String(v.siteId||v.site_id||v.site||'').toLowerCase(); }
+function getVendeurVente(v){ return String(v.vendeurId||v.vendeur||v.userId||v.vendeurNom||''); }
+const PIE_COLORS = ['#22c55e','#facc15','#3b82f6','#f97316','#ec4899','#8b5cf6','#06b6d4'];
+function dessinerCamembert(top, total){
+  let svg = document.getElementById('pieSvg');
+  document.getElementById('pieTotal').innerText = fmtFC(total);
+  document.getElementById('pieCenter').innerText = fmtFC(total);
+  if(!top.length || total===0){
+    svg.innerHTML = `<circle cx="60" cy="60" r="48" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="18" />`;
+    document.getElementById('pieLegend').innerHTML = '<div style="color:#64748b;font-size:12px">Aucune vente aujourd\'hui</div>';
+    return;
+  }
+  let R=48, C=2*Math.PI*R;
+  let offset=0;
+  let html='';
+  top.forEach((p,i)=>{
+    let pct = p.total/total;
+    let dash = pct*C;
+    let gap = 2;
+    let color = PIE_COLORS[i % PIE_COLORS.length];
+    html += `<circle cx="60" cy="60" r="${R}" fill="none" stroke="${color}" stroke-width="18" stroke-dasharray="${Math.max(0,dash-gap)} ${C-dash+gap}" stroke-dashoffset="${-offset}" />`;
+    offset += dash;
+    p.color = color; p.pct = pct;
+  });
+  svg.innerHTML = html;
+  document.getElementById('pieLegend').innerHTML = top.map(p=>`
+    <div class="pie-item">
+      <span class="pie-color" style="background:${p.color}"></span>
+      <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.nom}</span>
+      <b>${Math.round(p.pct*100)}%</b>
+      <span style="color:#94a3b8">${p.qte} x</span>
+    </div>`).join('');
+}
+function initDashboard(){
+  let ME = getMe();
+  let SITE_ID = ME.site;
+  let SITE = String(SITE_ID).toUpperCase();
+  document.getElementById('siteName').innerText=SITE;
+  document.getElementById('perfSite').innerText=SITE;
+  document.getElementById('userLabel').innerText='VENDEUR • '+ME.nom+' • '+SITE;
+  // ✅ AJOUT - On prend le taux du Panier
+  let TAUX = getTauxPanier(SITE_ID);
+  document.getElementById('tauxH').innerText = TAUX>0 ? ('1 $ = ' + TAUX.toLocaleString('fr-FR') + ' FC') : 'Non fixé';
+  document.getElementById('tauxJour').innerText = TAUX>0 ? TAUX.toLocaleString('fr-FR')+' FC' : 'Non fixé';
+  document.getElementById('tauxDetail').innerText = TAUX>0 ? TAUX.toLocaleString('fr-FR') : '-';
+  let pill = document.getElementById('pillTauxComptoir');
+  if(pill && !TAUX){ pill.style.background = '#dc3545'; pill.style.color = '#fff'; }
+  let all = getVentes();
+  let mineSite = all.filter(v=> getSiteVente(v)===String(SITE_ID).toLowerCase() || getSiteVente(v)==='');
+  let mine = mineSite.length>0 ? mineSite : all;
+  let avecVendeur = mine.filter(v=> getVendeurVente(v)!=='');
+  if(avecVendeur.length>0 && ME.id){
+    let perso = mine.filter(v=> getVendeurVente(v)===String(ME.id) || getVendeurVente(v)===ME.nom);
+    if(perso.length>0) mine = perso;
+  }
+  let validees = mine.filter(v=> estValidee(v));
+  let enAttente = mine.filter(v=> estEnAttente(v));
+  function grouper(list){
+    let map={};
+    list.forEach(v=>{
+      let tid = v.transactionId || v.idVente || v.venteId || v.id || v.commandeId || null;
+      let key = tid ? 'TX_'+tid : 'LIGNE_'+Math.random().toString(36).slice(2,8);
+      if(!tid){ map[key]={date:getDateVente(v), client:v.client||'Client', totalFC:getMontantVente(v), totalQte:getQteVente(v), items:[v]}; }
+      else { if(!map[key]) map[key]={date:getDateVente(v), client:v.client||'Client', totalFC:0, totalQte:0, items:[]}; map[key].totalFC += getMontantVente(v); map[key].totalQte += getQteVente(v); map[key].items.push(v); }
+    });
+    return Object.values(map).sort((a,b)=> new Date(b.date)-new Date(a.date));
+  }
+  let grouped = grouper(validees);
+  let groupedAttente = grouper(enAttente);
+  let today = new Date().toISOString().slice(0,10);
+  let todayLocal = new Date(new Date().getTime() + 60*60*1000).toISOString().slice(0,10);
+  let jour = grouped.filter(g=> (g.date||'').slice(0,10)===today || (g.date||'').slice(0,10)===todayLocal);
+  let jourAttente = groupedAttente.filter(g=> (g.date||'').slice(0,10)===today || (g.date||'').slice(0,10)===todayLocal);
+  let caJour = jour.reduce((s,g)=>s+g.totalFC,0);
+  let nbVentes = jour.length;
+  let totalArticles = jour.reduce((s,g)=>s+g.totalQte,0);
+  let caAttente = jourAttente.reduce((s,g)=>s+g.totalFC,0);
+  document.getElementById('caJour').innerText=fmtFC(caJour);
+  let caUSD = document.getElementById('caJourUSD');
+  if(caUSD) caUSD.innerText = TAUX>0 ? '≈ ' + (caJour/TAUX).toLocaleString('fr-FR',{minimumFractionDigits:2, maximumFractionDigits:2}) + ' $' : '≈ 0,00 $ - Taux non fixé';
+  document.getElementById('nbVentes').innerText=nbVentes;
+  document.getElementById('nbClients').innerText=totalArticles+' articles • '+nbVentes+' validées • '+jourAttente.length+' en attente ('+fmtFC(caAttente)+')';
+  document.getElementById('panierMoy').innerText=nbVentes?fmtFC(caJour/nbVentes):'0,00 FC';
+  document.getElementById('artMoy').innerText=nbVentes?(totalArticles/nbVentes).toFixed(1)+' art/vente':'0 art/vente';
+  document.getElementById('ventesAuj').innerText=nbVentes;
+  let hier = new Date(); hier.setDate(hier.getDate()-1);
+  let hierStr = hier.toISOString().slice(0,10);
+  let caHier = grouped.filter(g=>(g.date||'').slice(0,10)===hierStr).reduce((s,g)=>s+g.totalFC,0);
+  let evol = caHier>0 ? Math.round(((caJour-caHier)/caHier)*100) : (caJour>0?100:0);
+  document.getElementById('caEvol').innerText=(caJour>=caHier?'▲ ':'▼ ')+Math.abs(evol)+'% vs hier';
+  let keyCaisse = 'dub_caisse_'+String(SITE_ID).toLowerCase()+'_'+today;
+  let caisse = {ouverture:0, depenses:[]};
+  try{ caisse = JSON.parse(localStorage.getItem(keyCaisse)||'{"ouverture":0,"depenses":[]}'); }catch(e){}
+  let totalDep = 0;
+  if(caisse.depenses) totalDep = caisse.depenses.reduce((s,d)=>s+Number(d.montant||0),0);
+  if(caisse.ops) totalDep += caisse.ops.filter(o=>o.type==='depense'||o.type==='retrait').reduce((s,o)=>s+Number(o.montant||0),0);
+  let theorique = Number(caisse.ouverture||0) + caJour - totalDep;
+  document.getElementById('caOuverture').innerText=fmtFC(caisse.ouverture||0);
+  document.getElementById('caDepenses').innerText=fmtFC(totalDep);
+  document.getElementById('caTheorique').innerText=fmtFC(theorique);
+  document.getElementById('caDetail').innerText=`${fmtFC(caisse.ouverture||0)} + ${fmtFC(caJour)} - ${fmtFC(totalDep)} = ${fmtFC(theorique)}`;
+  let rapports=[]; try{ rapports=JSON.parse(localStorage.getItem('dub_rapports_caisse')||'[]'); }catch(e){}
+  let monRapport = rapports.find(r=> String(r.vendeurId)===String(ME.id) && r.date===today);
+  if(monRapport){
+    document.getElementById('caEnMain').innerText=fmtFC(monRapport.argentMain);
+    document.getElementById('statutRapport').innerText='✅ ENVOYÉ';
+    document.getElementById('statutRapport').style.background='rgba(34,197,94,0.2)'; document.getElementById('statutRapport').style.color='#22c55e';
+  }
+  let total7=0, max7=1, vals=[];
+  for(let i=6;i>=0;i--){
+    let d=new Date(); d.setDate(d.getDate()-i);
+    let ds=d.toISOString().slice(0,10);
+    let ca=grouped.filter(g=>(g.date||'').slice(0,10)===ds).reduce((s,g)=>s+g.totalFC,0);
+    vals.push({date:d,ca}); total7+=ca; if(ca>max7)max7=ca;
+  }
+  let barsHtml='';
+  vals.forEach((v,i)=>{
+    let h = Math.max(6, Math.round((v.ca/max7)*170));
+    let label=v.date.toLocaleDateString('fr-FR',{weekday:'short'}).slice(0,3);
+    label = label.charAt(0).toUpperCase()+label.slice(1);
+    let isToday = i===vals.length-1;
+    let dateStr = v.date.toISOString().slice(0,10);
+    barsHtml += `<div class="bar-col">
+      <div class="bar-val">${fmtK(v.ca)}</div>
+      <div class="bar-box ${isToday?'today':''}" style="height:${h}px"><div class="tooltip">${dateStr} - ${fmtFC(v.ca)}</div></div>
+      <div class="bar-day ${isToday?'today':''}">${label}</div>
+    </div>`;
+  });
+  document.getElementById('barsPhoto').innerHTML = barsHtml;
+  document.getElementById('total7j').innerText=fmtFC(total7)+' total';
+  document.getElementById('moy7j').innerText=fmtFC(total7/7);
+  document.getElementById('best7j').innerText=fmtFC(max7);
+  let prodMap={};
+  jour.forEach(g=> g.items.forEach(it=>{
+    let k=(it.produit||it.nom||'PRODUIT').toUpperCase();
+    if(!prodMap[k]) prodMap[k]={nom:it.produit||it.nom||'Produit', qte:0, total:0};
+    prodMap[k].qte += getQteVente(it);
+    prodMap[k].total += getMontantVente(it);
+  }));
+  let top = Object.values(prodMap).sort((a,b)=>b.total-a.total).slice(0,6);
+  let totalProd = top.reduce((s,p)=>s+p.total,0);
+  dessinerCamembert(top, totalProd);
+  document.getElementById('topProd').innerHTML = top.length ? top.map((p,i)=> '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);font-size:12px"><span style="display:flex;gap:8px;align-items:center;flex:1;padding-right:8px"><span style="width:10px;height:10px;border-radius:3px;background:'+p.color+'"></span>'+(i+1)+'. '+p.nom+'</span><b style="white-space:nowrap">'+p.qte+' x • '+fmtFC(p.total)+'</b></div>').join('') : '<div style="color:#64748b;font-size:12px">Aucune vente aujourd\'hui</div>';
+  document.getElementById('lastVentes').innerHTML = grouped.slice(0,5).map(g=> '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);font-size:12px"><span>'+(g.client||'Client')+' • '+g.totalQte+' art<br><small style="color:#64748b">'+new Date(g.date).toLocaleString('fr-FR')+'</small></span><b style="color:#22c55e;white-space:nowrap">'+fmtFC(g.totalFC)+' ✅</b></div>').join('') || '<div style="color:#64748b;font-size:12px">Aucune vente</div>';
+  if(jourAttente.length>0){
+    document.getElementById('lastVentes').innerHTML += `<div style="margin-top:10px;background:rgba(250,204,21,0.1);border:1px solid rgba(250,204,21,0.3);padding:10px;border-radius:10px;font-size:12px;color:#facc15">⏳ ${jourAttente.length} en attente - ${fmtFC(caAttente)}</div>`;
+  }
+  let allGrouped = grouper(validees);
+  let bySite={};
+  allGrouped.filter(g=>(g.date||'').slice(0,10)===today).forEach(g=>{
+    let s=String(g.siteId||'').toLowerCase()||'inconnu';
+    if(!bySite[s]) bySite[s]=0;
+    bySite[s]+=g.totalFC;
+  });
+  let classement = Object.entries(bySite).sort((a,b)=>b[1]-a[1]);
+  let rank = classement.findIndex(e=>e[0]===String(SITE_ID).toLowerCase())+1 || 1;
+  let totalSites = Math.max(1, classement.length);
+  document.getElementById('rankSite').innerText='#'+rank;
+  document.getElementById('rankSiteTotal').innerText='/'+totalSites;
+  document.getElementById('badgeSite').innerText = rank===1?'👑 LEADER':'#'+rank;
+  document.getElementById('barSite').style.width = (classement.length? Math.round((caJour/(classement[0][1]||1))*100):100)+'%';
+  document.getElementById('detailSite').innerText='Toi '+fmtFC(caJour)+' • 1er '+fmtFC(classement[0]?classement[0][1]:0);
+  document.getElementById('rankGlobal').innerText='#'+rank;
+  document.getElementById('rankGlobalTotal').innerText='/'+totalSites;
+  document.getElementById('badgeGlobal').innerText = rank<=3?'🏆 TOP '+rank:'#'+rank;
+  document.getElementById('barGlobal').style.width = (classement.length? Math.round((caJour/(classement[0][1]||1))*100):100)+'%';
+  document.getElementById('detailGlobal').innerText='Toi '+fmtFC(caJour)+' • 1er '+fmtFC(classement[0]?classement[0][1]:0);
+  setInterval(()=>{let h=document.getElementById('heure');if(h)h.innerText=new Date().toLocaleTimeString()},1000);
+}
+initDashboard();
+setInterval(initDashboard, 5000);
+</script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestion des Commandes</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 p-6">
+<div class="max-w-4xl mx-auto">
+  <h1 class="text-2xl font-black">📦 Gestion des Commandes</h1>
+  <p class="text-slate-500 mb-6">Dépôt Central - Benzene ERP</p>
+  <div class="grid grid-cols-2 gap-3">
+    <a href="commande-creer.html" class="bg-green-700 text-white p-5 rounded-2xl block"><div class="text-3xl">➕</div><div class="font-bold mt-2">Nouvelle Commande</div><div class="text-xs opacity-80">Générer besoins automatiques</div></a>
+    <a href="commandes-historique.html" class="bg-slate-800 text-white p-5 rounded-2xl block"><div class="text-3xl">📋</div><div class="font-bold mt-2">Historique</div><div class="text-xs opacity-80">Brouillons / Validées</div></a>
+    <a href="commande-impression.html" class="bg-white border p-5 rounded-2xl block"><div class="text-3xl">🖨️</div><div class="font-bold mt-2">Impression</div><div class="text-xs text-slate-500">Imprimer une commande</div></a>
+    <a href="../appros/index.html" class="bg-white border p-5 rounded-2xl block"><div class="text-3xl">⬅️</div><div class="font-bold mt-2">Retour Appros</div><div class="text-xs text-slate-500">Revenir à Approvisionnement</div></a>
+  </div>
+  <div id="resume" class="bg-white p-4 rounded-xl border mt-4"></div>
+</div>
+<script>
+let cmds = JSON.parse(localStorage.getItem('commandes')||'[]');
+let brouillon = cmds.filter(c=>c.statut==='BROUILLON').length;
+let validee = cmds.filter(c=>c.statut==='VALIDEE').length;
+document.getElementById('resume').innerHTML = `<b>Résumé :</b> ${cmds.length} commande(s) - ${brouillon} Brouillon(s) - ${validee} Validée(s)`;
+</script>
+</body>
+</html>

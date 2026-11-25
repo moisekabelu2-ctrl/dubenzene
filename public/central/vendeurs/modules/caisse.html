@@ -1,0 +1,168 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Caisse</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;font-family:'Plus Jakarta Sans',sans-serif;background:#F1F2F6;color:#0F172A" oncontextmenu="return false">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+/* === PROTECTION ANTI-COPIE === */
+*{ -webkit-touch-callout:none;-webkit-user-select:none !important;-moz-user-select:none !important;-ms-user-select:none !important;user-select:none !important}
+input,select,textarea{-webkit-user-select:text !important;-moz-user-select:text !important;-ms-user-select:text !important;user-select:text !important;-webkit-touch-callout:default}
+.top{background:linear-gradient(135deg,#0B0F1E,#111A2E 55%,#1E2A00);color:#fff;padding:18px 16px 20px;border-radius:0 0 28px 28px}
+.hero{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:16px;margin-top:14px}
+.stat{background:#fff;border:1px solid #EDEEF1;border-radius:18px;padding:13px;box-shadow:0 4px 14px rgba(15,23,42,0.04);flex:1}
+.card{background:#fff;border:1px solid #EDEEF1;border-radius:20px;padding:14px;box-shadow:0 4px 14px rgba(15,23,42,0.04)}
+.input{width:100%;background:#F8F9FA;border:1px solid #E9EBF0;border-radius:12px;padding:13px;outline:none;font-size:13px;font-weight:600;font-family:inherit}
+.input:focus{border-color:#0F172A;background:#fff}
+.btn{width:100%;padding:14px;border-radius:14px;border:none;font-weight:800;cursor:pointer;font-family:inherit}
+.row{background:#F8F9FA;border:1px solid #EEF0F3;border-radius:14px;padding:11px;margin-bottom:7px;display:flex;justify-content:space-between;align-items:center}
+.icon{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+</style>
+
+<div id="toastRapport" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.55);backdrop-filter:blur(3px);align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:24px;padding:24px 20px;width:100%;max-width:340px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,0.3)">
+    <div style="width:72px;height:72px;border-radius:100px;background:#DCFCE7;margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:38px">✅</div>
+    <b style="font-size:20px;display:block;margin-top:14px">Rapport envoyé !</b>
+    <div style="font-size:13px;color:#64748B;margin-top:6px;line-height:1.5">Le Gérant + l'Administrateur<br>ont reçu ton rapport.</div>
+    <div id="toastDetail" style="background:#F1F5F9;border-radius:12px;padding:12px;margin-top:14px;font-size:13px;text-align:left;line-height:1.6"></div>
+    <button onclick="fermerToast()" style="width:100%;padding:14px;border:none;border-radius:14px;background:#0F172A;color:#fff;font-weight:800;margin-top:14px;font-size:14px;cursor:pointer">OK, COMPRIS ✓</button>
+  </div>
+</div>
+<div id="miniToast" style="display:none;position:fixed;left:16px;right:16px;bottom:20px;z-index:9998;background:#0F172A;color:#fff;padding:14px 16px;border-radius:14px;font-weight:700;font-size:14px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,0.3)">✅ Rapport envoyé au Gérant + Admin</div>
+
+<div class="top">
+<div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:11px;letter-spacing:1px;color:#94A3B8;font-weight:800">DUBENZENE • <span id="siteName">VICTOIRE</span></div><b style="font-size:22px">Caisse</b></div><span style="font-size:10px;font-weight:800;padding:5px 9px;border-radius:100px;background:rgba(255,255,255,0.12)">● LIVE</span></div>
+<div class="hero">
+<div style="font-size:11px;color:#CBD5E1;font-weight:700">SOLDE THÉORIQUE</div>
+<div id="soldeTiroir" style="font-size:30px;font-weight:800;margin-top:4px">0 FC</div>
+<div id="detailSolde" style="font-size:11px;color:#94A3B8;margin-top:6px"></div>
+</div>
+</div>
+
+<div style="padding:12px">
+<div style="display:flex;gap:8px;margin-bottom:12px">
+<div class="stat"><div style="font-size:10px;color:#94A3B8;font-weight:800">VENTES JOUR</div><b id="totalVentes" style="font-size:16px;color:#16A34A">0 FC</b></div>
+<div class="stat"><div style="font-size:10px;color:#94A3B8;font-weight:800">DÉPENSES</div><b id="totalDepenses" style="font-size:16px;color:#DC2626">0 FC</b></div>
+<div class="stat"><div style="font-size:10px;color:#94A3B8;font-weight:800">EN MAIN</div><b id="enMainPreview" style="font-size:16px">0 FC</b></div>
+</div>
+
+<div class="card" style="margin-bottom:12px">
+<div style="display:flex;gap:10px;align-items:center"><span class="icon" style="background:#FEF3C7">🌅</span><b>Ouverture du matin</b></div>
+<div style="display:flex;gap:8px;margin-top:12px"><input id="ouverture" type="number" inputmode="numeric" class="input" placeholder="Ex: 50000"><button onclick="saveOuverture()" style="padding:13px 18px;border-radius:12px;background:#0F172A;color:#fff;font-weight:800;border:none;cursor:pointer">OK</button></div>
+<div id="ouvertureInfo" style="font-size:12px;color:#64748B;margin-top:8px"></div>
+</div>
+
+<div class="card" style="margin-bottom:12px">
+<div style="display:flex;justify-content:space-between;align-items:center"><div style="display:flex;gap:10px;align-items:center"><span class="icon" style="background:#FEE2E2">💸</span><b>Mes dépenses du jour</b></div><button onclick="document.getElementById('newMotif').focus()" style="background:#0F172A;color:#fff;border:none;padding:7px 12px;border-radius:100px;font-weight:800;cursor:pointer">+ Ajouter</button></div>
+<div id="listeDepenses" style="margin-top:12px"></div>
+<div style="display:flex;gap:8px;margin-top:8px">
+<input id="newMotif" class="input" placeholder="Motif - ex: Transport, sacs...">
+<input id="newMontant" type="number" inputmode="numeric" class="input" placeholder="Montant" style="max-width:130px">
+<button onclick="ajouterDepense()" style="background:#DC2626;color:#fff;border:none;padding:12px 16px;border-radius:12px;font-weight:800;cursor:pointer">+</button>
+</div>
+</div>
+
+<div class="card" style="border:1.5px solid #0F172A">
+<div style="display:flex;gap:10px;align-items:center"><span class="icon" style="background:#0F172A;color:#fff">🔒</span><div><b>Déclaration de fin de journée</b><div style="font-size:12px;color:#64748B">Ce rapport va au Gérant + Administrateur</div></div></div>
+<label style="font-size:12px;font-weight:700;margin-top:12px;display:block">💰 ARGENT QUE J'AI EN MAIN</label>
+<input id="argentMain" type="number" inputmode="numeric" class="input" placeholder="Compte et tape le montant réel" style="margin-top:6px;font-size:16px;font-weight:800">
+<textarea id="noteVendeur" class="input" placeholder="Note (optionnel) - ex: Un client doit 5000..." style="margin-top:8px;height:64px;resize:none"></textarea>
+<div id="apercuEcart" style="margin-top:10px"></div>
+<button class="btn" id="btnEnvoyer" style="background:linear-gradient(135deg,#22C55E,#16A34A);color:#fff;margin-top:10px" onclick="envoyerRapport()">📤 ENVOYER LE RAPPORT →</button>
+<div id="resultat" style="margin-top:10px"></div>
+</div>
+
+<div class="card" style="margin-top:12px"><b style="font-size:14px">📋 Mes rapports envoyés</b><div id="mesRapports" style="margin-top:8px"></div></div>
+</div>
+
+<script>
+// === PROTECTION ANTI-COPIE ===
+(function(){
+  function estChamp(el){ return el && (el.tagName==='INPUT'||el.tagName==='TEXTAREA'||el.tagName==='SELECT'); }
+  document.addEventListener('contextmenu', function(e){ if(!estChamp(e.target)) e.preventDefault(); });
+  document.addEventListener('copy', function(e){ if(!estChamp(e.target)) e.preventDefault(); });
+  document.addEventListener('cut', function(e){ if(!estChamp(e.target)) e.preventDefault(); });
+  document.addEventListener('paste', function(e){ if(!estChamp(e.target)) e.preventDefault(); });
+  document.addEventListener('selectstart', function(e){ if(!estChamp(e.target)) e.preventDefault(); });
+  document.addEventListener('dragstart', function(e){ e.preventDefault(); });
+  document.addEventListener('keydown', function(e){
+    if((e.ctrlKey||e.metaKey) && ['c','x','a','u','s','p'].includes(e.key.toLowerCase())){
+      if(!estChamp(e.target)) e.preventDefault();
+    }
+    if(e.key==='F12') e.preventDefault();
+  });
+  document.addEventListener('touchstart', function(e){ if(e.touches.length>1) e.preventDefault(); }, {passive:false});
+})();
+
+function fmt(n){return Number(n||0).toLocaleString('fr-FR')+' FC'}
+function getMe(){try{let u=JSON.parse(localStorage.getItem('user')||'{}');let uid=localStorage.getItem('dub_current_user_id')||u.id||u.userId||'';let site=u.siteId||u.siteName||'victoire';return {id:String(uid||''),site:site,nom:u.nom||u.username||''}}catch(e){return {id:'',site:'victoire',nom:''}}}
+let ME=getMe(), SITE=ME.site;
+document.getElementById('siteName').innerText=String(SITE).toUpperCase();
+let todayKey=new Date().toISOString().slice(0,10);
+function keyCaisse(){return 'dub_caisse_'+String(SITE).toLowerCase()+'_'+todayKey}
+function getCaisse(){try{return JSON.parse(localStorage.getItem(keyCaisse())||'{"ouverture":0,"depenses":[]}')}catch(e){return {ouverture:0,depenses:[]}}}
+function saveCaisse(c){localStorage.setItem(keyCaisse(),JSON.stringify(c))}
+function getVentesJour(){let a=[];try{a=JSON.parse(localStorage.getItem('dub_ventes')||'[]')}catch(e){}return a.filter(v=>String(v.siteId||v.site||'')===String(SITE) && String(v.vendeurId||v.vendeur||v.userId||'')===String(ME.id) && new Date(v.date).toISOString().slice(0,10)===todayKey)}
+function calculer(){
+  let c=getCaisse(); let ventes=getVentesJour();
+  let totalVentes=ventes.reduce((s,v)=>s+Number(v.valeurPV??v.valeur??v.total??0),0);
+  let totalDep=c.depenses.reduce((s,d)=>s+Number(d.montant),0);
+  let theorique=Number(c.ouverture||0)+totalVentes-totalDep;
+  document.getElementById('totalVentes').innerText=fmt(totalVentes);
+  document.getElementById('totalDepenses').innerText=fmt(totalDep);
+  document.getElementById('soldeTiroir').innerText=fmt(theorique);
+  document.getElementById('detailSolde').innerText=`${fmt(c.ouverture)} ouverture + ${fmt(totalVentes)} ventes - ${fmt(totalDep)} dépenses`;
+  document.getElementById('ouverture').value=c.ouverture||'';
+  document.getElementById('ouvertureInfo').innerText=c.ouverture?`✅ Ouverture : ${fmt(c.ouverture)}`:'Pas encore d’ouverture';
+  // ✅ SEULEMENT 20 VISIBLES, PAS DE PAGINATION POUR VOIR LE RESTE
+  let depensesVisibles = c.depenses.slice(0,20);
+  document.getElementById('listeDepenses').innerHTML=c.depenses.length?depensesVisibles.map((d,i)=>`<div class="row"><div><b style="font-size:13px">🔴 ${d.motif}</b><br><span style="font-size:12px;color:#64748B">${new Date(d.date).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span></div><div style="display:flex;gap:8px;align-items:center"><b style="color:#DC2626">-${fmt(d.montant)}</b><button onclick="supprDep(${i})" style="border:none;background:#FEE2E2;border-radius:8px;padding:6px 9px;cursor:pointer">✕</button></div></div>`).join('') + (c.depenses.length>20?`<div style="font-size:11px;color:#94A3B8;text-align:center;padding:6px">20 affichés sur ${c.depenses.length}</div>`:''):'<div style="color:#94A3B8;font-size:12px;text-align:center;padding:10px">Aucune dépense aujourd’hui</div>';
+  let main=Number(document.getElementById('argentMain').value||0);
+  document.getElementById('enMainPreview').innerText=fmt(main);
+  let ecart=main-theorique;
+  document.getElementById('apercuEcart').innerHTML=main? (ecart===0?`<div style="background:#DCFCE7;padding:10px;border-radius:10px;color:#166534;font-weight:800;font-size:13px">✅ Juste - Théorique ${fmt(theorique)} = En main ${fmt(main)}</div>`:ecart>0?`<div style="background:#FEF3C7;padding:10px;border-radius:10px;color:#92400E;font-weight:800;font-size:13px">⚠️ Surplus +${fmt(ecart)}</div>`:`<div style="background:#FEE2E2;padding:10px;border-radius:10px;color:#991B1B;font-weight:800;font-size:13px">❌ Manquant ${fmt(ecart)} - Il manque ${fmt(-ecart)}</div>`):'';
+  return {totalVentes,totalDep,theorique,c};
+}
+function saveOuverture(){let v=Number(document.getElementById('ouverture').value||0);let c=getCaisse();c.ouverture=v;saveCaisse(c);calculer();alert('✅ Ouverture : '+fmt(v))}
+function ajouterDepense(){
+  let motif=document.getElementById('newMotif').value.trim();
+  let montant=Number(document.getElementById('newMontant').value||0);
+  if(!motif) return alert('Motif obligatoire - ex: Transport');
+  if(!montant) return alert('Montant ?');
+  let c=getCaisse();c.depenses.unshift({motif:motif,montant:montant,date:new Date().toISOString()});saveCaisse(c);
+  document.getElementById('newMotif').value='';document.getElementById('newMontant').value='';calculer();
+}
+function supprDep(i){if(!confirm('Supprimer cette dépense ?'))return;let c=getCaisse();c.depenses.splice(i,1);saveCaisse(c);calculer()}
+function envoyerRapport(){
+  let d=calculer();
+  let main=Number(document.getElementById('argentMain').value||0);
+  if(!document.getElementById('argentMain').value) return alert('Tape l’argent que tu as en main');
+  if(!confirm(`ENVOYER CE RAPPORT ?\n\nVentes : ${fmt(d.totalVentes)}\nOuverture : ${fmt(d.c.ouverture)}\nDépenses : ${fmt(d.totalDep)} (${d.c.depenses.length})\nThéorique : ${fmt(d.theorique)}\nEn main : ${fmt(main)}\nÉcart : ${fmt(main-d.theorique)}`)) return;
+  let btn=document.getElementById('btnEnvoyer');
+  btn.innerText='⏳ ENVOI...'; btn.disabled=true;
+  let rapports=[];try{rapports=JSON.parse(localStorage.getItem('dub_rapports_caisse')||'[]')}catch(e){}
+  let rapport={id:Date.now(),siteId:SITE,date:todayKey,vendeurId:ME.id,vendeurNom:ME.nom,ouverture:d.c.ouverture,ventes:d.totalVentes,nbVentes:getVentesJour().length,depenses:d.c.depenses,totalDepenses:d.totalDep,theorique:d.theorique,argentMain:main,ecart:main-d.theorique,note:document.getElementById('noteVendeur').value.trim(),heure:new Date().toISOString(),statut:'envoyé',luParGerant:false,luParAdmin:false};
+  rapports.unshift(rapport); localStorage.setItem('dub_rapports_caisse',JSON.stringify(rapports));
+  let f=[];try{f=JSON.parse(localStorage.getItem('dub_fermetures_caisse')||'[]')}catch(e){} f.unshift(rapport); localStorage.setItem('dub_fermetures_caisse',JSON.stringify(f));
+  let notifs=[];try{notifs=JSON.parse(localStorage.getItem('dub_notifs')||'[]')}catch(e){}
+  notifs.unshift({id:Date.now(),type:'rapport_caisse',siteId:SITE,vendeur:ME.nom,montant:main,ecart:main-d.theorique,date:todayKey,heure:new Date().toISOString(),lu:false,message:`${ME.nom} a envoyé son rapport caisse - ${fmt(main)} en main`});
+  localStorage.setItem('dub_notifs',JSON.stringify(notifs));
+  try{ if(navigator.vibrate) navigator.vibrate([100,50,100]); }catch(e){}
+  document.getElementById('toastDetail').innerHTML=`<b>En main :</b> ${fmt(main)}<br><b>Ventes :</b> ${fmt(d.totalVentes)}<br><b>Dépenses :</b> ${fmt(d.totalDep)}<br><b>Écart :</b> ${fmt(main-d.theorique)}`;
+  document.getElementById('toastRapport').style.display='flex';
+  document.getElementById('miniToast').style.display='block';
+  document.getElementById('resultat').innerHTML=`<div style="background:#DCFCE7;padding:12px;border-radius:12px;color:#166534;font-weight:800;font-size:13px">✅ Rapport envoyé au Gérant + Administrateur<br>En main : ${fmt(main)} • Écart : ${fmt(main-d.theorique)}</div>`;
+  btn.innerText='✅ RAPPORT ENVOYÉ';
+  setTimeout(()=>{ btn.innerText='📤 ENVOYER LE RAPPORT →'; btn.disabled=false; },3000);
+  setTimeout(()=>{ document.getElementById('miniToast').style.display='none'; },4000);
+  afficherMesRapports();
+}
+function fermerToast(){document.getElementById('toastRapport').style.display='none';document.getElementById('miniToast').style.display='none'}
+function afficherMesRapports(){
+  let r=[];try{r=JSON.parse(localStorage.getItem('dub_rapports_caisse')||'[]')}catch(e){}
+  r=r.filter(x=>String(x.vendeurId)===String(ME.id));
+  // ✅ SEULEMENT 20 RAPPORTS VISIBLES
+  document.getElementById('mesRapports').innerHTML=r.slice(0,20).map(x=>`<div class="row"><div><b style="font-size:13px">${x.date} • ${fmt(x.argentMain)} en main</b><br><span style="font-size:12px;color:#64748B">Ventes ${fmt(x.ventes)} - Dép. ${fmt(x.totalDepenses)} • Écart ${fmt(x.ecart)}</span></div><span style="font-size:11px;background:#DCFCE7;color:#166534;padding:4px 8px;border-radius:100px;font-weight:800">ENVOYÉ</span></div>`).join('')||'<div style="color:#94A3B8;font-size:12px;text-align:center">Aucun rapport envoyé</div>';
+}
+document.getElementById('argentMain').addEventListener('input',calculer);
+calculer(); afficherMesRapports(); setInterval(calculer,5000);
+</script></body></html>
